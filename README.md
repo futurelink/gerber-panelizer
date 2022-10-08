@@ -9,4 +9,7 @@ This software allows:
 * saving / loading panel designs
 * and obviously, exporting panel into Gerber ZIP archive
 
+The panel created by this software looks like this (top layers only shown):
+![Screen shot result](screenshot-2.jpg)
+
 ---
