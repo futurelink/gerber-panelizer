@@ -1,0 +1,39 @@
+plugins {
+    id 'application'
+    //id 'org.openjfx.javafxplugin' version '0.0.13'
+}
+
+group 'ru.futurelink.gerber.panelizer'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+/*javafx {
+    version = "19"
+    modules = [ 'javafx.controls', 'javafx.fxml' ]
+}*/
+
+dependencies {
+    implementation "org.projectlombok:lombok:1.18.24"
+    annotationProcessor "org.projectlombok:lombok:1.18.24"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.9.0"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.9.0"
+
+    implementation "io.qtjambi:qtjambi:6.3.2"
+    implementation 'io.qtjambi:qtjambi-native-windows-x64:6.3.2'
+
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.14.0-rc1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.0-rc1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+applicationDefaultJvmArgs = [ "-Djava.library.path=C:\\Qt\\6.3.2\\msvc2019_64\\bin" ]
+mainClassName = 'ru.futurelink.gerber.panelizer.Panelizer'
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
