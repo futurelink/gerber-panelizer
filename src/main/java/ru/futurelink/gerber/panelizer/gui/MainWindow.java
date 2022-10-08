@@ -6,6 +6,7 @@ import io.qt.gui.QKeySequence;
 import io.qt.widgets.*;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.batch.BatchMerger;
+import ru.futurelink.gerber.panelizer.batch.BatchSettings;
 
 public class MainWindow extends QMainWindow {
     private final static String appName = "Gerber Panelizer";
@@ -13,12 +14,15 @@ public class MainWindow extends QMainWindow {
     @Getter private final MergerPanel workArea;
     private final QStatusBar statusBar;
     private final ProjectManagerWidget projectManager;
+    private final BatchSettings batchSettings;
 
     //private MergerProject project;
 
     public MainWindow() {
         setWindowTitle("Gerber panelizer");
         resize(1000, 700);
+
+        batchSettings = new BatchSettings();
 
         workArea = new MergerPanel(this, new BatchMerger("merged"));
         setCentralWidget(workArea);
@@ -38,13 +42,16 @@ public class MainWindow extends QMainWindow {
         var fileMenu = new QMenu("File");
         fileMenu.addAction("New project", QKeySequence.fromString("Ctrl+N"), projectManager::newProject);
         fileMenu.addAction("Open project", QKeySequence.fromString("Ctrl+O"), projectManager::openProject);
-        fileMenu.addAction("Save project", QKeySequence.fromString("Ctrl+S"), projectManager::saveProject);
+        fileMenu.addAction("Save project", QKeySequence.fromString("Ctrl+S"), this::saveProject);
         fileMenu.addAction("Save project as...", projectManager::saveProjectAs);
         fileMenu.addSeparator();
         fileMenu.addAction("Add Gerber ZIP", QKeySequence.fromString("Ctrl+A"), projectManager::addBatch);
-        fileMenu.addAction("Export merged panel ZIP", QKeySequence.fromString("Ctrl+E"), projectManager::export);
+        fileMenu.addAction("Export merged panel ZIP", QKeySequence.fromString("Ctrl+E"), this::export);
         fileMenu.addSeparator();
         fileMenu.addAction("Quit", QKeySequence.fromString("Ctrl+Q"), this::quit);
+
+        var settingsMenu = new QMenu("Settings");
+        settingsMenu.addAction("Export settings", this::exportSettings);
 
         var helpMenu = new QMenu("Help");
         helpMenu.addAction("Online documentation", this::documentation);
@@ -53,6 +60,7 @@ public class MainWindow extends QMainWindow {
 
         menuBar = new QMenuBar(this);
         menuBar.addMenu(fileMenu);
+        menuBar.addMenu(settingsMenu);
         menuBar.addMenu(helpMenu);
         setMenuBar(menuBar);
 
@@ -61,6 +69,18 @@ public class MainWindow extends QMainWindow {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void exportSettings() {
+        new ExportSettingsDialog(this, batchSettings).exec();
+    }
+
+    private void saveProject() {
+        projectManager.saveProject(batchSettings);
+    }
+
+    private void export() {
+        projectManager.export(batchSettings);
     }
 
     private void about() {

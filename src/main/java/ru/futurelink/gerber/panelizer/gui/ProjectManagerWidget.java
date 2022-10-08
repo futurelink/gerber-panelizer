@@ -186,14 +186,14 @@ public class ProjectManagerWidget extends QDockWidget {
         }
     }
 
-    final void saveProject() {
+    final void saveProject(BatchSettings settings) {
         var dlg = new QFileDialog(this);
         dlg.setWindowTitle("Save project");
         dlg.setNameFilter("Panel project (*.mrg)");
         dlg.setDefaultSuffix(".mrg");
         if (dlg.exec() != 0) {
             try {
-                project.save(dlg.selectedFiles().get(0));
+                project.save(dlg.selectedFiles().get(0), settings);
                 projectNameChanged.emit(project.getName());
             } catch (GerberException | IOException e) {
                 QMessageBox.critical(this, "Error...", e.getMessage());
@@ -227,8 +227,7 @@ public class ProjectManagerWidget extends QDockWidget {
         }
     }
 
-    void export() {
-        var settings = new BatchSettings();
+    void export(BatchSettings settings) {
         var dlg = new QFileDialog(this);
         dlg.setWindowTitle("Export merged batch ZIP...");
         dlg.setNameFilter("Gerber ZIP archive (*.zip)");

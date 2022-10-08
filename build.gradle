@@ -36,7 +36,8 @@ distributions {
     }
 }
 
-applicationDefaultJvmArgs = [ "-Djava.library.path=.;.\\bin;.\\src\\main\\resources\\qt\\bin" ]
+applicationDefaultJvmArgs = [ "-Djava.library.path=.;.\\bin;.\\bin\\qt\\bin" ]
 mainClassName = 'ru.futurelink.gerber.panelizer.Panelizer'
+
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17

@@ -13,7 +13,7 @@ abstract public class Layer {
         FrontCopper, FrontMask, FrontPaste, FrontSilk,
         BackCopper, BackMask, BackPaste, BackSilk,
         EdgeCuts, TopDrill, BottomDrill
-    };
+    }
 
     public Layer(String name) {
         this.name = name;
@@ -27,4 +27,20 @@ abstract public class Layer {
     }
 
     abstract public Type getLayerType();
+
+    public static String layerTypeName(Layer.Type type) {
+        return switch(type) {
+            case TopDrill -> "Top Drill";
+            case BottomDrill -> "Bottom Drill";
+            case FrontCopper -> "Front Copper";
+            case FrontMask -> "Front Mask";
+            case FrontPaste -> "Front Solder Paste";
+            case FrontSilk -> "Front Silkscreen";
+            case BackCopper -> "Back Copper";
+            case BackMask -> "Back Mask";
+            case BackPaste -> "Back Solder Paste";
+            case BackSilk -> "Back Silkscreen";
+            case EdgeCuts -> "Outline";
+        };
+    }
 }

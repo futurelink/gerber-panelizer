@@ -1,10 +1,11 @@
 package ru.futurelink.gerber.panelizer.batch;
 
+import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import java.util.HashMap;
 
 public class BatchSettings {
-    private final HashMap<Layer.Type, String> filePatterns;
+    @Getter private final HashMap<Layer.Type, String> filePatterns;
 
     public BatchSettings() {
         filePatterns = new HashMap<>();

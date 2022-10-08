@@ -109,11 +109,10 @@ public class MergerProject extends QObject {
         return project;
     }
 
-    public void save(String filename) throws IOException, GerberException {
+    public void save(String filename, BatchSettings settings) throws IOException, GerberException {
         var zipStream = new ZipOutputStream(new FileOutputStream(filename));
 
         // Save imported batches
-        var settings = new BatchSettings();
         for (var b : batches.keySet()) {
             zipStream.putNextEntry(new ZipEntry(b.toString() + ".zip"));
             new BatchWriter(zipStream, batches.get(b)).write(settings);
