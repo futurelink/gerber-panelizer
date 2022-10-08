@@ -28,19 +28,10 @@ test {
     useJUnitPlatform()
 }
 
-tasks.register('bundleQt') {
-    def qtDir = layout.buildDirectory.dir('qt')
-    outputs.dir qtDir
-    doLast {
-        //docs.get().asFile.mkdirs()
-        //docs.get().file('readme.txt').asFile.write('Read me!')
-    }
-}
-
 distributions {
     main {
         contents {
-            from 'qt'
+            from 'bin/qt'
         }
     }
 }
