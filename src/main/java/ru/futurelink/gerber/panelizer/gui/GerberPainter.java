@@ -2,6 +2,7 @@ package ru.futurelink.gerber.panelizer.gui;
 
 import io.qt.core.QPointF;
 import io.qt.core.QRectF;
+import io.qt.core.QSizeF;
 import io.qt.gui.QColor;
 import io.qt.gui.QPainter;
 import io.qt.gui.QPen;
@@ -30,6 +31,7 @@ public class GerberPainter extends QPainter {
         QPen selectedPen;
         QPen validFeaturePen;
         QPen invalidFeaturePen;
+        QPen marksPen;
         Settings() {
             axisPen = new QPen(new QColor(200, 200, 200), 1);
             drillPen = new QPen(new QColor(180, 180, 180), 1);
@@ -37,6 +39,7 @@ public class GerberPainter extends QPainter {
             selectedPen = new QPen(new QColor(0, 0, 200), 2);
             validFeaturePen = new QPen(new QColor(0, 200, 0), 1);
             invalidFeaturePen = new QPen(new QColor(200, 0, 0), 1);
+            marksPen = new QPen(new QColor(200, 0, 200), 1);
         }
     }
 
@@ -55,6 +58,24 @@ public class GerberPainter extends QPainter {
         drawLine(
                 0, (int) Math.round(center.y() / scale),
                 width, (int) Math.round(center.y() / scale));
+    }
+
+    void drawBoundingBoxMarks(QRectF box) {
+        setPen(settings.marksPen);
+
+        // Bounding box
+        var topLeft = translatedPoint(box.topLeft(), null);
+        var bottomRight = translatedPoint(box.bottomRight(), null);
+        var s = new QSizeF(box.width() / scale, -box.height() / scale);
+        drawRect(new QRectF(topLeft, s));
+
+        // Axis marks
+        var cx = center.x() / scale;
+        var cy = center.y() / scale;
+        drawLine((int) topLeft.x(), (int) cy - 10, (int) topLeft.x(), (int) cy + 10);
+        drawLine((int) cx - 10, (int) topLeft.y(), (int) cx + 10, (int) topLeft.y());
+        drawLine((int) bottomRight.x(), (int) cy - 10, (int) bottomRight.x(), (int) cy + 10);
+        drawLine((int) cx - 10, (int) bottomRight.y(), (int) cx + 10, (int) bottomRight.y());
     }
 
     void drawHoles(QPainter painter, Layer layer, QPointF offset) {

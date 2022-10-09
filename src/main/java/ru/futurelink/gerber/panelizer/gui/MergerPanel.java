@@ -1,9 +1,6 @@
 package ru.futurelink.gerber.panelizer.gui;
 
-import io.qt.core.QMetaObject;
-import io.qt.core.QPoint;
-import io.qt.core.QPointF;
-import io.qt.core.Qt;
+import io.qt.core.*;
 import io.qt.gui.*;
 import io.qt.widgets.QMenu;
 import io.qt.widgets.QWidget;
@@ -35,6 +32,7 @@ public class MergerPanel extends QWidget {
     public final Signal1<Object> moveItem = new Signal1<>();
     public final Signal3<Class <? extends Feature>, Double, Double> addFeatureItem = new Signal3<>();
     public final Signal3<UUID, Double, Double> addBatchItem = new Signal3<>();
+    public final Signal1<QSizeF> batchChanged = new Signal1<>();
 
     private final QAction addFeatureAction;
     private final QAction deleteAction;
@@ -86,9 +84,9 @@ public class MergerPanel extends QWidget {
         var addBatchInstanceMenu = new QMenu("Add Gerber instance");
         addBatchInstanceMenu.setEnabled(instanceUnderMouse == null);
         for (var batchId : merger.getBatchUUIDs()) {
-            addBatchInstanceMenu.addAction(merger.getBatchName(batchId), b -> {
-                addBatchItem.emit(batchId, mousePosition.x(), mousePosition.y());
-            });
+            addBatchInstanceMenu.addAction(merger.getBatchName(batchId), b ->
+                addBatchItem.emit(batchId, mousePosition.x(), mousePosition.y())
+            );
         }
 
         menu.addAction(addFeatureAction);
@@ -225,9 +223,13 @@ public class MergerPanel extends QWidget {
         if (merger.getMergedBatch().getLayer(Layer.Type.EdgeCuts) instanceof Gerber fullOutline) {
             painter.setPen(new QPen(new QColor(0, 0, 0), 1));
             painter.drawGerber(fullOutline, null);
+
+            var w = fullOutline.getMaxX() - fullOutline.getMinX();
+            var h = fullOutline.getMaxY() - fullOutline.getMinY();
+            painter.drawBoundingBoxMarks(new QRectF(fullOutline.getMinX(), fullOutline.getMinY(), w, h));
         }
 
-        /*if (merger.getBatch().getLayer(Layer.Type.FrontSilk) instanceof Gerber g) {
+        /*if (merger.getMergedBatch().getLayer(Layer.Type.FrontMask) instanceof Gerber g) {
             painter.setPen(new QPen(new QColor(160, 160, 160), 1));
             painter.drawGerber(g, null);
         }*/
@@ -277,11 +279,12 @@ public class MergerPanel extends QWidget {
     void mergeDisplayLayers() {
         try {
             merger.mergeLayer(Layer.Type.EdgeCuts);
-            merger.mergeLayer(Layer.Type.FrontSilk);
+            merger.mergeLayer(Layer.Type.FrontMask);
             merger.mergeLayer(Layer.Type.TopDrill);
         } catch (MergerException ex) {
             ex.printStackTrace();
         }
+        batchChanged.emit(new QSizeF(merger.getMergedBatch().width(), merger.getMergedBatch().height()));
     }
 
     public final void clear() {

@@ -1,6 +1,7 @@
 package ru.futurelink.gerber.panelizer.gui;
 
 import io.qt.core.QPointF;
+import io.qt.core.QSizeF;
 import io.qt.core.Qt;
 import io.qt.gui.QKeySequence;
 import io.qt.widgets.*;
@@ -12,11 +13,12 @@ public class MainWindow extends QMainWindow {
     private final static String appName = "Gerber Panelizer";
     @Getter private final QMenuBar menuBar;
     @Getter private final MergerPanel workArea;
+
+    private final QLabel statusCoords;
+    private final QLabel statusSize;
     private final QStatusBar statusBar;
     private final ProjectManagerWidget projectManager;
     private final BatchSettings batchSettings;
-
-    //private MergerProject project;
 
     public MainWindow() {
         setWindowTitle("Gerber panelizer");
@@ -28,12 +30,20 @@ public class MainWindow extends QMainWindow {
         setCentralWidget(workArea);
 
         statusBar = new QStatusBar(this);
+        statusCoords = new QLabel();
+        statusCoords.setMinimumWidth(200);
+        statusBar.addWidget(statusCoords);
+        statusSize = new QLabel();
+        statusSize.setMinimumWidth(200);
+        statusBar.addWidget(statusSize);
         setStatusBar(statusBar);
 
         projectManager = new ProjectManagerWidget(this, workArea);
         addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, projectManager);
 
+        workArea.batchChanged.connect(this, "batchChanged(QSizeF)");
         workArea.mouseMoved.connect(this, "showCoordinates(QPointF)");
+
         workArea.deleteItem.connect(projectManager, "deleteItem(Object)");
         workArea.moveItem.connect(projectManager, "moveItem(Object)");
         workArea.addFeatureItem.connect(projectManager, "addFeatureItem(Class, double, double)");
@@ -98,7 +108,12 @@ public class MainWindow extends QMainWindow {
     }
 
     // Slot
-    public void showCoordinates(QPointF point) {
-        statusBar.showMessage(String.format("Coords: %.4f, %.4f", point.x(), point.y()));
+    private void showCoordinates(QPointF point) {
+        statusCoords.setText(String.format("Coords: %.4f, %.4f", point.x(), point.y()));
+    }
+
+    // Slot
+    private void batchChanged(QSizeF size) {
+        statusSize.setText(String.format("Size: %.4f x %.4f", size.width(), size.height()));
     }
 }
