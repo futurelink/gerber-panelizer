@@ -43,4 +43,21 @@ abstract public class Layer {
             case EdgeCuts -> "Outline";
         };
     }
+
+    public static Layer.Type layerNameType(String name) {
+        return switch(name) {
+            case "Top Drill" -> Layer.Type.TopDrill;
+            case "Bottom Drill" -> Layer.Type.BottomDrill;
+            case "Front Copper" -> Layer.Type.FrontCopper;
+            case "Front Mask" -> Layer.Type.FrontMask;
+            case "Front Solder Paste" -> Layer.Type.FrontPaste;
+            case "Front Silkscreen" -> Layer.Type.FrontSilk;
+            case "Back Copper" -> Layer.Type.BackCopper;
+            case "Back Mask" -> Layer.Type.BackMask;
+            case "Back Solder Paste" -> Layer.Type.BackPaste;
+            case "Back Silkscreen" -> Layer.Type.BackSilk;
+            case "Outline" -> Layer.Type.EdgeCuts;
+            default -> null;
+        };
+    }
 }

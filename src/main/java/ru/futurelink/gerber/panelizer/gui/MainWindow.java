@@ -22,7 +22,7 @@ public class MainWindow extends QMainWindow {
         setWindowTitle("Gerber panelizer");
         resize(1000, 700);
 
-        batchSettings = new BatchSettings();
+        batchSettings = BatchSettings.getInstance();
 
         workArea = new MergerPanel(this, new BatchMerger("merged"));
         setCentralWidget(workArea);
@@ -72,7 +72,7 @@ public class MainWindow extends QMainWindow {
     }
 
     private void exportSettings() {
-        new ExportSettingsDialog(this, batchSettings).exec();
+        new ExportSettingsDialog(this).exec();
     }
 
     private void saveProject() {

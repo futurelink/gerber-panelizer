@@ -20,6 +20,8 @@ public class Panelizer {
         }
 
         QApplication.initialize(args);
+        QApplication.setApplicationName("Gerber panelizer");
+        QApplication.setOrganizationName("Futurelink");
         QApplication.setWindowIcon(new QIcon(":/app-icon.png"));
         var win = new MainWindow();
         win.show();

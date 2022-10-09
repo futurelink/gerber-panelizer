@@ -1,22 +1,22 @@
 package ru.futurelink.gerber.panelizer.gui;
 
 import io.qt.core.Qt;
+import io.qt.gui.QBrush;
+import io.qt.gui.QColor;
 import io.qt.widgets.*;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.batch.BatchSettings;
 
 public class ExportSettingsDialog extends QDialog {
-    @Getter private final BatchSettings settings;
-
+    private final BatchSettings settings = BatchSettings.getInstance();
     private final QTableWidget table;
 
-    public ExportSettingsDialog(QWidget parent, BatchSettings settings) {
+    public ExportSettingsDialog(QWidget parent) {
         super(parent);
-        this.settings = settings;
 
         setWindowTitle("Gerber export settings");
-        setMinimumSize(500, 300);
+        setMinimumSize(500, 400);
         setLayout(new QVBoxLayout(this));
 
         table = new QTableWidget(this);
@@ -41,11 +41,33 @@ public class ExportSettingsDialog extends QDialog {
         fillTable();
     }
 
+    @Override
+    public void accept() {
+        settings.saveSettings();
+        super.accept();
+    }
+
+    @Override
+    public void reject() {
+        settings.loadSettings();
+        super.accept();
+    }
+
     private void fillTable() {
-        table.setRowCount(settings.getFilePatterns().size()+1);
+        table.setRowCount(settings.getFilePatterns().size());
+        table.itemChanged.connect(item -> {
+            if (item.column() == 1) {
+                var type = Layer.layerNameType(table.item(item.row(), 0).text());
+                settings.getFilePatterns().put(type, item.text());
+            }
+        });
         var row = 0;
+        var bg = new QBrush(new QColor(220, 220, 220));
         for (var i : settings.getFilePatterns().keySet()) {
-            table.setItem(row, 0, new QTableWidgetItem(Layer.layerTypeName(i)));
+            var item = new QTableWidgetItem(Layer.layerTypeName(i));
+            item.setFlags(Qt.ItemFlag.ItemIsEnabled);
+            item.setBackground(bg);
+            table.setItem(row, 0, item);
             table.setItem(row, 1, new QTableWidgetItem(settings.getFilePatterns().get(i)));
             row++;
         }
