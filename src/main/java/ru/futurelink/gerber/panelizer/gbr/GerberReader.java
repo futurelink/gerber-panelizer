@@ -133,6 +133,7 @@ public class GerberReader {
     }
 
     private void processXYD(Gerber gerber) throws GerberException {
+        if (gerber.getFS() == null) throw new GerberException("Gerber format (%FS) is not set, can't process");
         var dCmd = Integer.parseInt(buffer.toString());
         var cmd = this.prevBuffer;
         var matcher = XYDRegex.matcher(cmd + "D" + dCmd);

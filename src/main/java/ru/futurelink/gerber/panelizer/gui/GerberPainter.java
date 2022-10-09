@@ -79,7 +79,6 @@ public class GerberPainter extends QPainter {
     }
 
     void drawHoles(QPainter painter, Layer layer, QPointF offset) {
-        // Draw holes
         if (layer instanceof Excellon e) {
             var hi = e.holes();
             while (hi.hasNext()) {

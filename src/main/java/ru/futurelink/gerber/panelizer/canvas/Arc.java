@@ -7,8 +7,7 @@ import java.math.BigDecimal;
 public class Arc extends Geometry {
     @Getter final private BigDecimal i;
     @Getter final private BigDecimal j;
-
-    @Getter private QuadrantMode quadrantMode;
+    @Getter private final QuadrantMode quadrantMode;
 
     public Arc(Point start, Point end, BigDecimal i, BigDecimal j, Interpolation interpolation, int aperture, QuadrantMode quadrantMode) {
         super(start, end, interpolation, aperture);

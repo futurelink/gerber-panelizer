@@ -4,12 +4,11 @@ import ru.futurelink.gerber.panelizer.exceptions.GerberException;
 import ru.futurelink.gerber.panelizer.gbr.cmd.d.D01To03;
 
 import java.io.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class GerberWriter {
-
     private final OutputStream stream;
-
     private final static Logger log = Logger.getLogger("GerberWriter");
 
     public GerberWriter(OutputStream stream) {
@@ -48,5 +47,6 @@ public class GerberWriter {
             writer.write("\n");
         }
         writer.flush();
+        log.log(Level.INFO, "Written Gerber to stream");
     }
 }

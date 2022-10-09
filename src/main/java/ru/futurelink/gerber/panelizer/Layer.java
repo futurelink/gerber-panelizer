@@ -60,4 +60,20 @@ abstract public class Layer {
             default -> null;
         };
     }
+
+    public final String layerTypeFileFunction(Type type) {
+        return switch (type) {
+            case FrontCopper -> "Copper,L1,Top";
+            case FrontMask -> "Soldermask,Top";
+            case FrontPaste -> "Paste,Top";
+            case FrontSilk -> "Legend,Top";
+            case BackCopper -> "Copper,L2,Bot";
+            case BackMask -> "Soldermask,Bot";
+            case BackPaste -> "Paste,Bot";
+            case BackSilk -> "Legend,Bot";
+            case EdgeCuts -> "Profile,NP";
+            case TopDrill -> "Drill,Top";
+            case BottomDrill -> "Drill,Bot";
+        };
+    }
 }

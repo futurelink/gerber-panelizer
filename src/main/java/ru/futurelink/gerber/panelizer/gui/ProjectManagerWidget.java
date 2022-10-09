@@ -1,5 +1,6 @@
 package ru.futurelink.gerber.panelizer.gui;
 
+import io.qt.core.QFileInfo;
 import io.qt.core.QStringList;
 import io.qt.widgets.*;
 import lombok.Getter;
@@ -21,8 +22,10 @@ public class ProjectManagerWidget extends QDockWidget {
     private final QTreeWidget projectTree;
     @Getter private MergerProject project;
     @Getter MergerPanel workArea;
+    @Getter private boolean modified;
+    @Getter private String filename;
 
-    private final Signal1<String> projectNameChanged = new Signal1<>();
+    public final Signal1<String> projectNameChanged = new Signal1<>();
 
     public ProjectManagerWidget(QWidget parent, MergerPanel workArea) {
         super(parent);
@@ -31,6 +34,7 @@ public class ProjectManagerWidget extends QDockWidget {
         setMinimumWidth(300);
 
         this.workArea = workArea;
+        this.modified = false;
 
         projectTree = new QTreeWidget(this);
         projectTree.setColumnCount(2);
@@ -79,9 +83,24 @@ public class ProjectManagerWidget extends QDockWidget {
         batchesItem.setExpanded(true);
     }
 
+    public String getProjectName() {
+        if (filename == null) {
+            return "Untitled";
+        } else {
+            return new QFileInfo(filename).fileName();
+        }
+    }
+
     public void setProject(MergerProject project) {
         this.project = project;
+        setModified(false);
         refresh();
+    }
+
+    public void setModified(boolean modified) {
+        this.modified = modified;
+        if (modified) setWindowTitle("Project structure (modified)");
+        else setWindowTitle("Project structure");
     }
 
     // Slot
@@ -140,10 +159,11 @@ public class ProjectManagerWidget extends QDockWidget {
     }
 
     final void newProject() {
+        filename = null;
         project = new MergerProject(this);
         setProject(project);
         workArea.clear();
-        projectNameChanged.emit(project.getName());
+        projectNameChanged.emit(getProjectName());
     }
 
     final void openProject() {
@@ -152,10 +172,12 @@ public class ProjectManagerWidget extends QDockWidget {
             dlg.setWindowTitle("Open project");
             dlg.setNameFilter("Panel project (*.mrg)");
             if (dlg.exec() != 0) {
-                project = MergerProject.load(this, dlg.selectedFiles().get(0));
+                workArea.clear();
+                filename = dlg.selectedFiles().get(0);
+                project = MergerProject.load(this, filename);
                 setProject(project);
                 refresh();
-                projectNameChanged.emit(project.getName());
+                projectNameChanged.emit(getProjectName());
 
                 // Synchronize workarea with project... should be somewhere else!!
                 for (var id : project.getBatches().keySet()) {
@@ -179,6 +201,7 @@ public class ProjectManagerWidget extends QDockWidget {
                 }
 
                 workArea.mergeDisplayLayers();
+                setModified(false);
             }
         } catch (IOException | GerberException | MergerException e) {
             QMessageBox.critical(this, "Error...", e.getMessage());
@@ -186,28 +209,45 @@ public class ProjectManagerWidget extends QDockWidget {
         }
     }
 
-    final void saveProject(BatchSettings settings) {
-        var dlg = new QFileDialog(this);
-        dlg.setWindowTitle("Save project");
-        dlg.setNameFilter("Panel project (*.mrg)");
-        dlg.setDefaultSuffix(".mrg");
-        if (dlg.exec() != 0) {
-            try {
-                project.save(dlg.selectedFiles().get(0), settings);
-                projectNameChanged.emit(project.getName());
-            } catch (GerberException | IOException e) {
-                QMessageBox.critical(this, "Error...", e.getMessage());
+    final void saveProject() {
+        var settings = BatchSettings.getInstance();
+        try {
+            if (filename != null) {
+                project.save(filename, settings);
+            } else {
+                var dlg = new QFileDialog(this);
+                dlg.setWindowTitle("Save project");
+                dlg.setNameFilter("Panel project (*.mrg)");
+                dlg.setDefaultSuffix(".mrg");
+                if (dlg.exec() != 0) {
+                    project.save(dlg.selectedFiles().get(0), settings);
+                    filename = dlg.selectedFiles().get(0);
+                    setModified(false);
+                    projectNameChanged.emit(getProjectName());
+                }
             }
+        } catch (GerberException | IOException e) {
+            e.printStackTrace();
+            QMessageBox.critical(this, "Error...", e.getMessage());
         }
     }
 
     final void saveProjectAs() {
+        var settings = BatchSettings.getInstance();
         var dlg = new QFileDialog(this);
         dlg.setWindowTitle("Save project as...");
         dlg.setNameFilter("Panel project (*.mrg)");
         dlg.setDefaultSuffix(".mrg");
         if (dlg.exec() != 0) {
-            projectNameChanged.emit(project.getName());
+            try {
+                project.save(dlg.selectedFiles().get(0), settings);
+                filename = dlg.selectedFiles().get(0);
+                setModified(false);
+                projectNameChanged.emit(getProjectName());
+            } catch (GerberException | IOException e) {
+                e.printStackTrace();
+                QMessageBox.critical(this, "Error...", e.getMessage());
+            }
         }
     }
 
@@ -227,7 +267,8 @@ public class ProjectManagerWidget extends QDockWidget {
         }
     }
 
-    void export(BatchSettings settings) {
+    void export() {
+        var settings = BatchSettings.getInstance();
         var dlg = new QFileDialog(this);
         dlg.setWindowTitle("Export merged batch ZIP...");
         dlg.setNameFilter("Gerber ZIP archive (*.zip)");

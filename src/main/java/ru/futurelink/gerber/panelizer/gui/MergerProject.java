@@ -21,8 +21,6 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class MergerProject extends QObject {
-
-    @Getter private final String name;
     @Getter private final HashMap<UUID, Batch> batches;
     @Getter private final HashMap<UUID, BatchPlacement> batchPlacements;
     @Getter private final HashMap<UUID, FeaturePlacement> featurePlacements;
@@ -64,7 +62,6 @@ public class MergerProject extends QObject {
 
     public MergerProject(QObject parent) {
         super(parent);
-        name = "Untitled";
         batchPlacements = new HashMap<>();
         featurePlacements = new HashMap<>();
         batches = new HashMap<>();
@@ -110,34 +107,37 @@ public class MergerProject extends QObject {
     }
 
     public void save(String filename, BatchSettings settings) throws IOException, GerberException {
-        var zipStream = new ZipOutputStream(new FileOutputStream(filename));
+        try (var zipStream = new ZipOutputStream(new FileOutputStream(filename))) {
+            // Save imported batches
+            for (var b : batches.keySet()) {
+                zipStream.putNextEntry(new ZipEntry(b.toString() + ".zip"));
+                new BatchWriter(zipStream, batches.get(b)).write(settings);
+                zipStream.closeEntry();
+            }
 
-        // Save imported batches
-        for (var b : batches.keySet()) {
-            zipStream.putNextEntry(new ZipEntry(b.toString() + ".zip"));
-            new BatchWriter(zipStream, batches.get(b)).write(settings);
-            zipStream.closeEntry();
+            // Save layout to JSON
+            var mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+            var layoutNode = mapper.createObjectNode();
+            var batchesNode = layoutNode.putArray("batches");
+            var instancesNode = layoutNode.putArray("instances");
+            var featuresNode = layoutNode.putArray("features");
+            for (var i : batches.keySet()) {
+                var o = batchesNode.addObject();
+                o.put("id", i.toString());
+                o.put("name", batches.get(i).getName());
+            }
+            for (var i : batchPlacements.keySet()) instancesNode.addPOJO(batchPlacements.get(i));
+            for (var i : featurePlacements.keySet()) featuresNode.addPOJO(featurePlacements.get(i));
+
+            zipStream.putNextEntry(new ZipEntry("layout.json"));
+            mapper.writeValue(zipStream, layoutNode);
+            try {
+                zipStream.closeEntry();
+                zipStream.finish();
+            } catch(IOException ex) {
+                // TODO Ignore stream closed exception for now
+            }
         }
-
-        // Save layout to JSON
-        var mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-        var layoutNode = mapper.createObjectNode();
-        var batchesNode = layoutNode.putArray("batches");
-        var instancesNode = layoutNode.putArray("instances");
-        var featuresNode = layoutNode.putArray("features");
-        for (var i : batches.keySet()) {
-            var o = batchesNode.addObject();
-            o.put("id", i.toString());
-            o.put("name", batches.get(i).getName());
-        }
-        for (var i : batchPlacements.keySet()) instancesNode.addPOJO(batchPlacements.get(i));
-        for (var i : featurePlacements.keySet()) featuresNode.addPOJO(featurePlacements.get(i));
-
-        zipStream.putNextEntry(new ZipEntry("layout.json"));
-        mapper.writeValue(zipStream, layoutNode);
-        zipStream.closeEntry();
-
-        zipStream.finish();
     }
 
     public final UUID addBatchZIP(String filename) throws IOException, GerberException {

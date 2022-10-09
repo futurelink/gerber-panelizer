@@ -14,7 +14,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class BatchWriter {
-    private final ZipOutputStream zipStream;
+    private final OutputStream stream;
     private final Batch batch;
 
     private final static Logger log = Logger.getLogger("BatchReader");
@@ -24,18 +24,19 @@ public class BatchWriter {
     }
 
     public BatchWriter(OutputStream zipStream, Batch batch) throws FileNotFoundException {
-        this.zipStream = new ZipOutputStream(zipStream);
+        this.stream = new DataOutputStream(zipStream);
         this.batch = batch;
     }
 
     public void write(BatchSettings settings) throws IOException, GerberException {
         log.log(Level.INFO, "Writing batch...");
+        var zipStream = new ZipOutputStream(stream);
         var iter = batch.layers();
         while (iter.hasNext()) {
             var layer = iter.next();
 
             var filename = settings.getFilename(layer.getLayerType(), batch.getName());
-            log.log(Level.INFO, "Writing batch file {0}", new Object[] { filename });
+            log.log(Level.INFO, "Writing batch file {0}", new Object[]{filename});
 
             zipStream.putNextEntry(new ZipEntry(filename));
             if (layer instanceof Gerber g) {
@@ -45,7 +46,6 @@ public class BatchWriter {
             }
             zipStream.closeEntry();
         }
-
         zipStream.finish();
     }
 

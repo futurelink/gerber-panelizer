@@ -39,6 +39,7 @@ public class MainWindow extends QMainWindow {
         setStatusBar(statusBar);
 
         projectManager = new ProjectManagerWidget(this, workArea);
+        projectManager.projectNameChanged.connect(name -> setWindowTitle(appName + " - " + name));
         addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, projectManager);
 
         workArea.batchChanged.connect(this, "batchChanged(QSizeF)");
@@ -86,11 +87,11 @@ public class MainWindow extends QMainWindow {
     }
 
     private void saveProject() {
-        projectManager.saveProject(batchSettings);
+        projectManager.saveProject();
     }
 
     private void export() {
-        projectManager.export(batchSettings);
+        projectManager.export();
     }
 
     private void about() {
@@ -115,5 +116,6 @@ public class MainWindow extends QMainWindow {
     // Slot
     private void batchChanged(QSizeF size) {
         statusSize.setText(String.format("Size: %.4f x %.4f", size.width(), size.height()));
+        projectManager.setModified(true);
     }
 }

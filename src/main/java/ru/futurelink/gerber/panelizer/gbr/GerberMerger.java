@@ -135,7 +135,7 @@ public class GerberMerger extends Merger {
         layer.add(new TF(TF.ProjectId, name, UUID.randomUUID().toString()));
         layer.add(new TF(TF.SameCoordinates, "Original"));
         layer.add(new TF(TF.FilePolarity, "Positive"));
-        layer.add(new TF(TF.FileFunction, layer.fileFunctionFromLayerType(type)));
+        layer.add(new TF(TF.FileFunction, layer.layerTypeFileFunction(type)));
 
         layer.add(new FS(true, true));
         layer.add(new MO(MO.Mode.MM));
