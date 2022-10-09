@@ -11,7 +11,6 @@ import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.batch.BatchMerger;
 import ru.futurelink.gerber.panelizer.canvas.Geometry;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.Feature;
-import ru.futurelink.gerber.panelizer.canvas.fetaures.MouseBites;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.RoundFeature;
 import ru.futurelink.gerber.panelizer.drl.Excellon;
 import ru.futurelink.gerber.panelizer.gbr.Gerber;
@@ -121,22 +120,19 @@ public class GerberPainter extends QPainter {
                         if (currentInterpolation == Geometry.Interpolation.LINEAR) {
                             drawLine(translatedPoint(currentPoint, offset), translatedPoint(p, offset));
                         } else {
-                            var translated = translatedPoint(p, offset);
-                            var currentTranslated = translatedPoint(currentPoint, offset);
-                            var centerPoint = new QPointF(
-                                    currentTranslated.x() + d.getI().doubleValue() / scale,
-                                    currentTranslated.y() - d.getJ().doubleValue() / scale
-                            );
-                            var rad = Math.sqrt(Math.pow(currentTranslated.x() - centerPoint.x(), 2) +
-                                    Math.pow(currentTranslated.y() - centerPoint.y(), 2)
-                            );
-
-                            // Calculate angles necessary to build arc
-                            var rect = new QRectF(centerPoint.x() - rad, centerPoint.y() - rad, rad * 2, rad * 2);
-                            var a1 = Math.atan2(-(currentTranslated.y() - centerPoint.y()), currentTranslated.x() - centerPoint.x());
-                            var a2 = Math.atan2(-(translated.y() - centerPoint.y()), translated.x() - centerPoint.x());
-                            var a = Math.abs(a2 - a1) * ((currentInterpolation == Geometry.Interpolation.CW) ? -1 : 1);
-                            drawArc(rect, (int) (a1 * arcQ), (int) (a * arcQ));
+                            var arcC = new QPointF(currentPoint.x() + d.getI().doubleValue(), currentPoint.y() + d.getJ().doubleValue());
+                            var radius = Math.sqrt(Math.pow(currentPoint.x() - arcC.x(), 2) + Math.pow(currentPoint.y() - arcC.y(), 2));
+                            var ang1 = Math.atan2(currentPoint.y() - arcC.y(), currentPoint.x() - arcC.x());
+                            var ang2 = Math.atan2(p.y() - arcC.y(), p.x() - arcC.x());
+                            if ((currentInterpolation == Geometry.Interpolation.CCW) && (ang2 < 0)) ang2 = ang2 + 2 * Math.PI;
+                            var arcRect = new QRectF(
+                                    (arcC.x() - radius + center.x() + ((offset != null) ? offset.x() : 0)) / scale,
+                                    -(arcC.y() - radius - center.y() + ((offset != null) ? offset.y() : 0)) / scale,
+                                    radius * 2 / scale, -radius * 2 / scale);
+                            // drawRect(arcRect);
+                            //drawEllipse(translatedPoint(currentPoint, offset), 2, 2);
+                            // System.out.println("Ang1 = " + ang1 + "Ang2 = " + ang2 + ", Rot=" + aRot);
+                            drawArc(arcRect, (int) (ang1 * arcQ), (int) ((ang2 - ang1) * arcQ));
                         }
                         break;
                     case 3: // Not supported yet
