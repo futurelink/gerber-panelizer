@@ -128,12 +128,14 @@ public class MergerPanel extends QWidget {
             if (instanceUnderMouse == null) { // Moving coordinate system
                 center = new QPointF(center.x() + offset.x() * scale, center.y() + offset.y() * scale);
             } else { // Moving part that is under mouse
+                var offsetMM = new QPointF(
+                        Math.round(offset.x() * scale * 1000.0) / 1000.0,
+                        Math.round(-offset.y() * scale * 1000.0) / 1000.0);
                 if (instanceUnderMouse instanceof MouseBites m) {
-                    m.moveOffset(Math.round(offset.x() * scale * 1000.0) / 1000.0,
-                            Math.round(-offset.y() * scale * 1000.0) / 1000.0);
+                    m.moveOffset(offsetMM.x(), offsetMM.y());
                 } else if (instanceUnderMouse instanceof BatchMerger.BatchInstance b) {
-                    b.moveOffset(Math.round(offset.x() * scale * 1000.0) / 1000.0,
-                            Math.round(-offset.y() * scale * 1000.0) / 1000.0);
+                    var constrainedOffset = getConstrainedOffset(b, offsetMM, 3);
+                    b.moveOffset(constrainedOffset.x(), constrainedOffset.y());
                 }
             }
             mousePressPoint = position;
@@ -154,6 +156,62 @@ public class MergerPanel extends QWidget {
         event.accept();
     }
 
+    // Checks for collisions with other placements and returns offset
+    // that is possible.
+    private QPointF getConstrainedOffset(BatchMerger.BatchInstance instance, QPointF offset, double distance) {
+        // Check left-right border intersection
+        var instRect = new QRectF(instance.left() - distance + offset.x(), instance.top(),
+                instance.width() + distance * 2, instance.height());
+        var iter = merger.batchInstances();
+        while (iter.hasNext()) {
+            var b = iter.next();
+            if (b != instance) {
+                var i = rectIntersection(instRect, new QRectF(b.left(), b.top(), b.width(), b.height()));
+                if (i != null) {
+                    offset.setX(offset.x() - ((offset.x() > 0) ? Math.abs(i.width()) : -Math.abs(i.width())));
+                    break;
+                }
+            }
+        }
+
+        // Check top-bottom border
+        instRect = new QRectF(instance.left(), instance.top() + distance + offset.y(),
+                instance.width(), instance.height() - distance * 2);
+        iter = merger.batchInstances();
+        while (iter.hasNext()) {
+            var b = iter.next();
+            if (b != instance) {
+                var i = rectIntersection(instRect, new QRectF(b.left(), b.top(), b.width(), b.height()));
+                if (i != null) {
+                    offset.setY(offset.y() - ((offset.y() > 0) ? Math.abs(i.height()) : -Math.abs(i.height())));
+                    break;
+                }
+            }
+        }
+
+        return offset;
+    }
+
+    private QRectF rectIntersection(QRectF r1, QRectF r2) {
+        var r1XRange = new Utils.QRange(r1.left(), r1.right());
+        var r2XRange = new Utils.QRange(r2.left(), r2.right());
+        var r1YRange = new Utils.QRange(r1.top(), r1.bottom());
+        var r2YRange = new Utils.QRange(r2.top(), r2.bottom());
+        var xIntersection = r1XRange.intersection(r2XRange);
+        var yIntersection  = r1YRange.intersection(r2YRange);
+        if ((xIntersection != null) && (yIntersection != null)) {
+            return new QRectF(
+                    xIntersection.x1(),
+                    yIntersection.x1(),
+                    xIntersection.x2() - xIntersection.x1(),
+                    yIntersection.x2() - yIntersection.x1());
+        }
+        return null;
+    }
+
+    // Returns instance (Feature or Batch) under mouse cursor.
+    // Feature has priority, so if both feature and batch are under
+    // mouse, then feature is returned.
     private Object getInstanceUnderMouse(QPointF mousePosition) {
         Object i = null;
 

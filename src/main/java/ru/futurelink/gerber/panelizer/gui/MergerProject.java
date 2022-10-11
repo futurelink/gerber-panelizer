@@ -28,10 +28,13 @@ public class MergerProject extends QObject {
         @Getter UUID batchUUID;
         @Getter double x;
         @Getter double y;
+        @Getter double margin;
+
         public BatchPlacement(UUID batchUUID, double x, double y) {
             this.batchUUID = batchUUID;
             this.x = x;
             this.y = y;
+            this.margin = 3;    // 3mm by default
         }
 
         void move(double x, double y) {

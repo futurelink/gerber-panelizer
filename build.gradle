@@ -24,7 +24,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.0-rc1'
 }
 
+def QTPath = ".;.\\bin;.\\bin\\qt\\bin"
+
 test {
+    systemProperty ("java.library.path", "-Djava.library.path=$QTPath")
     useJUnitPlatform()
 }
 
@@ -36,7 +39,7 @@ distributions {
     }
 }
 
-applicationDefaultJvmArgs = [ "-Djava.library.path=.;.\\bin;.\\bin\\qt\\bin" ]
+applicationDefaultJvmArgs = [ "-Djava.library.path=$QTPath" ]
 mainClassName = 'ru.futurelink.gerber.panelizer.Panelizer'
 
 sourceCompatibility = JavaVersion.VERSION_17

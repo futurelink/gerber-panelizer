@@ -222,10 +222,10 @@ public class ProjectManagerWidget extends QDockWidget {
                 if (dlg.exec() != 0) {
                     project.save(dlg.selectedFiles().get(0), settings);
                     filename = dlg.selectedFiles().get(0);
-                    setModified(false);
                     projectNameChanged.emit(getProjectName());
                 }
             }
+            setModified(false);
         } catch (GerberException | IOException e) {
             e.printStackTrace();
             QMessageBox.critical(this, "Error...", e.getMessage());

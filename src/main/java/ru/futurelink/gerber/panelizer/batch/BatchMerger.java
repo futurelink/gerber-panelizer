@@ -25,15 +25,41 @@ public class BatchMerger {
         @Getter private final UUID id;
         @Getter private final Batch batch;
         @Getter private Point offset;
+        @Getter private double margin;
 
         public BatchInstance(UUID id, Batch b, Point offset) {
             this.id = id;
             this.batch = b;
             this.offset = offset;
+            this.margin = 3;
         }
 
         public void moveOffset(double x, double y) {
             this.offset = offset.offset(x, y);
+        }
+
+        public final double left() {
+            return batch.left() + offset.getX().doubleValue();
+        }
+
+        public final double right() {
+            return batch.right() + offset.getX().doubleValue();
+        }
+
+        public final double top() {
+            return batch.top() + offset.getY().doubleValue();
+        }
+
+        public final double bottom() {
+            return batch.bottom() + offset.getY().doubleValue();
+        }
+
+        public final double height() {
+            return batch.bottom() - batch.top();
+        }
+
+        public final double width() {
+            return batch.right() - batch.left();
         }
 
         public final Point getTopLeft() {
