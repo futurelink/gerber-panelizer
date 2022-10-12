@@ -3,6 +3,7 @@ package ru.futurelink.gerber.panelizer.gui;
 import io.qt.core.QPointF;
 import io.qt.core.QSizeF;
 import io.qt.core.Qt;
+import io.qt.gui.QCloseEvent;
 import io.qt.gui.QKeySequence;
 import io.qt.widgets.*;
 import lombok.Getter;
@@ -104,8 +105,20 @@ public class MainWindow extends QMainWindow {
 
     }
 
-    private void quit() {
-        close();
+    private void quit() { close(); }
+
+    @Override
+    protected void closeEvent(QCloseEvent event) {
+        if (projectManager.isModified()) {
+            var res = QMessageBox.question(this, "Save changes?",
+                    "Project changes were not saved. Do you want to save changes and quit?",
+                    new QMessageBox.StandardButtons(
+                            QMessageBox.StandardButton.Yes,
+                            QMessageBox.StandardButton.No,
+                            QMessageBox.StandardButton.Cancel));
+            if (res == QMessageBox.StandardButton.Cancel) { event.ignore(); }
+            if (res == QMessageBox.StandardButton.Yes) projectManager.saveProject();
+        }
     }
 
     // Slot

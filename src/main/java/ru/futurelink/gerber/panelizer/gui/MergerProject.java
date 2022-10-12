@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.qt.core.*;
 import lombok.Getter;
-import lombok.Setter;
 import ru.futurelink.gerber.panelizer.batch.Batch;
 import ru.futurelink.gerber.panelizer.batch.BatchReader;
 import ru.futurelink.gerber.panelizer.batch.BatchSettings;
@@ -21,20 +20,21 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class MergerProject extends QObject {
+    private final static double defaultMargin = 3;
+    @Getter private double margin;
     @Getter private final HashMap<UUID, Batch> batches;
     @Getter private final HashMap<UUID, BatchPlacement> batchPlacements;
     @Getter private final HashMap<UUID, FeaturePlacement> featurePlacements;
+
     static class BatchPlacement {
         @Getter UUID batchUUID;
         @Getter double x;
         @Getter double y;
-        @Getter double margin;
 
         public BatchPlacement(UUID batchUUID, double x, double y) {
             this.batchUUID = batchUUID;
             this.x = x;
             this.y = y;
-            this.margin = 3;    // 3mm by default
         }
 
         void move(double x, double y) {
@@ -68,6 +68,7 @@ public class MergerProject extends QObject {
         batchPlacements = new HashMap<>();
         featurePlacements = new HashMap<>();
         batches = new HashMap<>();
+        margin = 3;
     }
 
     public static MergerProject load(QObject parent, String filename) throws IOException, GerberException {
@@ -100,6 +101,8 @@ public class MergerProject extends QObject {
                         var y = pn.get("y").asDouble();
                         project.addBatchPlacement(UUID.fromString(id), x, y);
                     }
+
+                    project.margin = node.get("margin") == null ? defaultMargin : node.get("margin").asDouble();
                 } else if (element.getName().endsWith(".zip")) {
                     var uuid = element.getName().substring(0, element.getName().length() - 4);
                     project.batches.put(UUID.fromString(uuid), new BatchReader(zip.getInputStream(element)).read(""));
@@ -131,6 +134,7 @@ public class MergerProject extends QObject {
             }
             for (var i : batchPlacements.keySet()) instancesNode.addPOJO(batchPlacements.get(i));
             for (var i : featurePlacements.keySet()) featuresNode.addPOJO(featurePlacements.get(i));
+            layoutNode.put("margin", margin);
 
             zipStream.putNextEntry(new ZipEntry("layout.json"));
             mapper.writeValue(zipStream, layoutNode);

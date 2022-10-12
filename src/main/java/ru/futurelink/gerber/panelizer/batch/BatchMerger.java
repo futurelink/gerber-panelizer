@@ -25,7 +25,7 @@ public class BatchMerger {
         @Getter private final UUID id;
         @Getter private final Batch batch;
         @Getter private Point offset;
-        @Getter private double margin;
+        @Getter private final double margin;
 
         public BatchInstance(UUID id, Batch b, Point offset) {
             this.id = id;

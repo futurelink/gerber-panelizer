@@ -20,7 +20,7 @@ public class MergerPanel extends QWidget {
 
     @Getter private final BatchMerger merger;
     private double scale;
-    private double minDistance;
+    @Getter private double margin;
     private QPointF center;
     private QPointF mousePosition;
     private QPoint mousePressPoint;
@@ -41,7 +41,7 @@ public class MergerPanel extends QWidget {
         super(parent);
         merger = m;
         scale = 0.25;
-        minDistance = 3; // 3mm minimal distance between batches
+        margin = 0;
         center = new QPointF(10, 10);
         mousePressPoint = null;
         painterSettings = new GerberPainter.Settings();
@@ -54,6 +54,10 @@ public class MergerPanel extends QWidget {
 
         setMouseTracking(true);
         repaint();
+    }
+
+    public void setMargin(double margin) {
+        this.margin = margin;
     }
 
     private void deleteItem(boolean t) {
@@ -134,7 +138,7 @@ public class MergerPanel extends QWidget {
                 if (instanceUnderMouse instanceof MouseBites m) {
                     m.moveOffset(offsetMM.x(), offsetMM.y());
                 } else if (instanceUnderMouse instanceof BatchMerger.BatchInstance b) {
-                    var constrainedOffset = getConstrainedOffset(b, offsetMM, 3);
+                    var constrainedOffset = getConstrainedOffset(b, offsetMM, margin);
                     b.moveOffset(constrainedOffset.x(), constrainedOffset.y());
                 }
             }

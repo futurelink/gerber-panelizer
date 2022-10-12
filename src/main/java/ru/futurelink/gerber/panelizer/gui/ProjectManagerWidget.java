@@ -180,6 +180,7 @@ public class ProjectManagerWidget extends QDockWidget {
                 projectNameChanged.emit(getProjectName());
 
                 // Synchronize workarea with project... should be somewhere else!!
+                workArea.setMargin(project.getMargin());
                 for (var id : project.getBatches().keySet()) {
                     workArea.addBatch(id, project.getBatches().get(id));
                 }
