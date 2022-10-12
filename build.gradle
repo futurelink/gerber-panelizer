@@ -1,9 +1,20 @@
 plugins {
     id 'application'
+    id 'edu.sc.seis.launch4j' version '2.5.3'
 }
 
 group 'ru.futurelink.gerber.panelizer'
 version '0.1.1'
+
+def MainClassName = 'ru.futurelink.gerber.panelizer.Panelizer'
+def QTPath = ".;.\\bin;.\\bin\\qt\\bin"
+def JVMArgs = [ "-Djava.library.path=$QTPath" ]
+
+applicationDefaultJvmArgs = JVMArgs
+mainClassName = MainClassName
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
@@ -24,10 +35,8 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.0-rc1'
 }
 
-def QTPath = ".;.\\bin;.\\bin\\qt\\bin"
-
 test {
-    systemProperty ("java.library.path", "-Djava.library.path=$QTPath")
+    systemProperty ("java.library.path", JVMArgs)
     useJUnitPlatform()
 }
 
@@ -39,8 +48,10 @@ distributions {
     }
 }
 
-applicationDefaultJvmArgs = [ "-Djava.library.path=$QTPath" ]
-mainClassName = 'ru.futurelink.gerber.panelizer.Panelizer'
+launch4j {
+    bundledJrePath = "C:/jdk-17.0.2"
+    mainClassName = MainClassName
+    jvmOptions = JVMArgs
+    icon = "${projectDir}/src/main/resources/app-icon.ico"
+}
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
