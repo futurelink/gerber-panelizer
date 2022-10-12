@@ -352,6 +352,7 @@ public class MergerPanelWidget extends QWidget {
 
     public final void clear() {
         merger.clear();
+        margin = 0;
         repaint();
     }
 }

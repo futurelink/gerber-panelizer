@@ -93,16 +93,16 @@ public class ProjectManagerWidget extends QDockWidget {
         }
     }
 
-    public void setProject(MergerProject project) {
-        this.project = project;
-        setModified(false);
-        refresh();
-    }
-
     public void setModified(boolean modified) {
         this.modified = modified;
         if (modified) setWindowTitle("Project structure (modified)");
         else setWindowTitle("Project structure");
+    }
+
+    private void setProject(MergerProject project) {
+        this.project = project;
+        setModified(false);
+        refresh();
     }
 
     // Slot
@@ -165,6 +165,7 @@ public class ProjectManagerWidget extends QDockWidget {
         project = new MergerProject(this);
         setProject(project);
         workArea.clear();
+        workArea.setMargin(project.getMargin());
         projectNameChanged.emit(getProjectName());
     }
 
