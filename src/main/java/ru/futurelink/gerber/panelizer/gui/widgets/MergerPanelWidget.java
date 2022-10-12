@@ -13,7 +13,6 @@ import ru.futurelink.gerber.panelizer.canvas.fetaures.Feature;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.MouseBites;
 import ru.futurelink.gerber.panelizer.exceptions.MergerException;
 import ru.futurelink.gerber.panelizer.gbr.Gerber;
-import ru.futurelink.gerber.panelizer.gui.ColorSettings;
 import ru.futurelink.gerber.panelizer.gui.GerberPainter;
 import ru.futurelink.gerber.panelizer.gui.Utils;
 
@@ -240,8 +239,8 @@ public class MergerPanelWidget extends QWidget {
                 var instance = iter.next();
                 var tl = instance.getTopLeft();
                 var br = instance.getBottomRight();
-                if (isInBetween(mousePosition.x(), tl.getX().doubleValue(), br.getX().doubleValue()) &&
-                        isInBetween(mousePosition.y(), tl.getY().doubleValue(), br.getY().doubleValue())
+                if (isInBetween(mousePosition.x(), tl.getX(), br.getX()) &&
+                        isInBetween(mousePosition.y(), tl.getY(), br.getY())
                 ) {
                     i = instance;
                     break;
@@ -335,8 +334,8 @@ public class MergerPanelWidget extends QWidget {
     }
 
     private boolean isInCircle(QPointF p, Point center, double radius) {
-        return (Math.pow(p.x() - center.getX().doubleValue(), 2) +
-                Math.pow(p.y() - center.getY().doubleValue(), 2) < radius * radius);
+        return (Math.pow(p.x() - center.getX(), 2) +
+                Math.pow(p.y() - center.getY(), 2) < radius * radius);
     }
 
     public void mergeDisplayLayers() {

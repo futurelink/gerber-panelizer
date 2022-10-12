@@ -3,7 +3,6 @@ package ru.futurelink.gerber.panelizer.canvas.fetaures;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.canvas.*;
 
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,8 +53,8 @@ public class MouseBites extends RoundFeature {
                 }
                 if (closest == null) continue;
 
-                var i = i1.getStart().getX().subtract(closest.getX()).doubleValue() / 2;
-                var j = i1.getStart().getY().subtract(closest.getY()).doubleValue() / 2;
+                var i = (i1.getStart().getX() - closest.getX()) / 2;
+                var j = (i1.getStart().getY() - closest.getY()) / 2;
                 log.log(Level.FINE, "Arc from {0} to {1}, I = {2}, J = {3}",
                         new Object[] { i1.getStart(), closest, i, j }
                 );
@@ -127,23 +126,21 @@ public class MouseBites extends RoundFeature {
     }
 
     private Range calcIntersectionWithLine(Line l, Point center, double r) {
-        var p1 = l.getStart();
-        var p2 = l.getEnd();
-        var p1x = p1.getX().doubleValue();
-        var p1y = p1.getY().doubleValue();
-        var p2x = p2.getX().doubleValue();
-        var p2y = p2.getY().doubleValue();
+        var p1x = l.getStart().getX();
+        var p1y = l.getStart().getY();
+        var p2x = l.getEnd().getX();
+        var p2y = l.getEnd().getY();
         var a = Math.pow(p2x - p1x, 2) + Math.pow(p2y - p1y, 2);
-        var b = 2 * ((p2x - p1x) * (p1x - center.getX().doubleValue()) + (p2y - p1y) * (p1y - center.getY().doubleValue()));
-        var c = Math.pow(center.getX().doubleValue(), 2) + Math.pow(center.getY().doubleValue(), 2) + Math.pow(p1x, 2) + Math.pow(p1y, 2) -
-                2 * (center.getX().doubleValue() * p1x + center.getY().doubleValue() * p1y) - Math.pow(r, 2) ;
+        var b = 2 * ((p2x - p1x) * (p1x - center.getX()) + (p2y - p1y) * (p1y - center.getY()));
+        var c = Math.pow(center.getX(), 2) + Math.pow(center.getY(), 2) + Math.pow(p1x, 2) + Math.pow(p1y, 2) -
+                2 * (center.getX() * p1x + center.getY() * p1y) - Math.pow(r, 2) ;
         var d = Math.pow(b, 2) - 4 * a * c;
 
         // Find roots of ax^2 + bx + c = 0
         if (d > 0) {
             var res = new Range(
-                    checkIntersectionPoint(p1, p2, (-b + Math.sqrt(d)) / (2 * a)),
-                    checkIntersectionPoint(p1, p2, (-b - Math.sqrt(d)) / (2 * a))
+                    checkIntersectionPoint(l.getStart(), l.getEnd(), (-b + Math.sqrt(d)) / (2 * a)),
+                    checkIntersectionPoint(l.getStart(), l.getEnd(), (-b - Math.sqrt(d)) / (2 * a))
             );
             if ((res.getStart() != null) && (res.getEnd() != null)) {
                 log.log(Level.FINE, "Got intersection, checked {0}", new Object[] { res });
@@ -159,15 +156,15 @@ public class MouseBites extends RoundFeature {
      * @param i - line quotient (discriminate of square equation)
      */
     private Point checkIntersectionPoint(Point p1, Point p2, double i) {
-        var ix = p1.getX().add(p2.getX().subtract(p1.getX()).multiply(BigDecimal.valueOf(i)));
-        var iy = p1.getY().add(p2.getY().subtract(p1.getY()).multiply(BigDecimal.valueOf(i)));
-        if (inRange(ix.doubleValue(), p1.getX().doubleValue(), p2.getX().doubleValue()) &&
-                inRange(iy.doubleValue(), p1.getY().doubleValue(), p2.getY().doubleValue())) {
-            log.log(Level.FINE, "Valid ({0},{1})", new Object[] { ix.doubleValue(), iy.doubleValue() });
+        var ix = p1.getX() + ((p2.getX() - p1.getX()) * i);
+        var iy = p1.getY() + ((p2.getY() - p1.getY()) * i);
+        if (inRange(ix, p1.getX(), p2.getX()) && inRange(iy, p1.getY(), p2.getY())) {
+            log.log(Level.FINE, "Valid ({0},{1})", new Object[] { ix, iy });
             return new Point(ix, iy);
+        } else {
+            log.log(Level.FINE, "Invalid ({0},{1})", new Object[]{ix, iy});
+            return null;
         }
-        log.log(Level.FINE, "Invalid ({0},{1})", new Object[] { ix.doubleValue(), iy.doubleValue() });
-        return null;
     }
 
     /**

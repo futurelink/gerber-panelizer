@@ -16,14 +16,14 @@ public class Range {
 
     public final boolean isVertical() {
         if ((getEnd() != null) && (getStart() != null)) {
-            return getStart().getX().equals(getEnd().getX());
+            return (getStart().getX() == getEnd().getX());
         }
         return false;
     }
 
     public final boolean isHorizontal() {
         if ((getEnd() != null) && (getStart() != null)) {
-            return getStart().getY().equals(getEnd().getY());
+            return (getStart().getY() == getEnd().getY());
         }
         return false;
     }
@@ -39,26 +39,26 @@ public class Range {
     }
 
     public double width() {
-        return getEnd().getX().doubleValue() - getStart().getX().doubleValue();
+        return getEnd().getX() - getStart().getX();
     }
 
     public double height() {
-        return getEnd().getY().doubleValue() - getStart().getY().doubleValue();
+        return getEnd().getY() - getStart().getY();
     }
 
     public Point pointAtDistance(double distance) {
         if (isHorizontal()) {
             return new Point(
-                    getStart().getX().compareTo(getEnd().getX()) < 0 ?
-                            getStart().getX().add(BigDecimal.valueOf(distance)) :
-                            getStart().getX().subtract(BigDecimal.valueOf(distance)),
+                    getStart().getX() < getEnd().getX() ?
+                            getStart().getX() + distance :
+                            getStart().getX() - distance,
                     getStart().getY());
         } else if (isVertical()) {
             return new Point(
                     getStart().getX(),
-                    getStart().getY().compareTo(getEnd().getY()) < 0 ?
-                            getStart().getY().add(BigDecimal.valueOf(distance)) :
-                            getStart().getY().subtract(BigDecimal.valueOf(distance))
+                    getStart().getY() < getEnd().getY() ?
+                            getStart().getY() + distance :
+                            getStart().getY() - distance
             );
         } else {
             var w = width();

@@ -39,19 +39,19 @@ public class BatchMerger {
         }
 
         public final double left() {
-            return batch.left() + offset.getX().doubleValue();
+            return batch.left() + offset.getX();
         }
 
         public final double right() {
-            return batch.right() + offset.getX().doubleValue();
+            return batch.right() + offset.getX();
         }
 
         public final double top() {
-            return batch.top() + offset.getY().doubleValue();
+            return batch.top() + offset.getY();
         }
 
         public final double bottom() {
-            return batch.bottom() + offset.getY().doubleValue();
+            return batch.bottom() + offset.getY();
         }
 
         public final double height() {
@@ -64,15 +64,15 @@ public class BatchMerger {
 
         public final Point getTopLeft() {
             return new Point(
-                    batch.left() + offset.getX().doubleValue(),
-                    batch.top() + offset.getY().doubleValue()
+                    batch.left() + offset.getX(),
+                    batch.top() + offset.getY()
             );
         }
 
         public final Point getBottomRight() {
             return new Point(
-                    batch.right() + offset.getX().doubleValue(),
-                    batch.bottom() + offset.getY().doubleValue()
+                    batch.right() + offset.getX(),
+                    batch.bottom() + offset.getY()
             );
         }
 
@@ -130,8 +130,8 @@ public class BatchMerger {
             var sourcePosition = inst.getOffset();
             merger.add(
                     inst.batch.getLayer(type),
-                    sourcePosition.getX().doubleValue(),
-                    sourcePosition.getY().doubleValue()
+                    sourcePosition.getX(),
+                    sourcePosition.getY()
             );
         }
 

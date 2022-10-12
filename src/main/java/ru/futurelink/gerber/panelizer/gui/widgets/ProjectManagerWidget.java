@@ -143,18 +143,18 @@ public class ProjectManagerWidget extends QDockWidget {
     private void moveItem(Object obj) {
         if (obj instanceof RoundFeature f) {
             project.getFeaturePlacements().get(f.getId()).move(
-                    f.getCenter().getX().doubleValue(),
-                    f.getCenter().getY().doubleValue()
+                    f.getCenter().getX(),
+                    f.getCenter().getY()
             );
         } else if (obj instanceof Feature f) {
             project.getFeaturePlacements().get(f.getId()).move(
-                    f.getTopLeft().getX().doubleValue(),
-                    f.getTopLeft().getY().doubleValue()
+                    f.getTopLeft().getX(),
+                    f.getTopLeft().getY()
             );
         } else if (obj instanceof BatchMerger.BatchInstance b) {
             project.getBatchPlacements().get(b.getId()).move(
-                    b.getTopLeft().getX().doubleValue(),
-                    b.getTopLeft().getY().doubleValue()
+                    b.getTopLeft().getX(),
+                    b.getTopLeft().getY()
             );
         }
         refresh();

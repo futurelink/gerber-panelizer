@@ -50,7 +50,7 @@ public class GerberMerger extends Merger {
 
                 var macroSubstitutes = mergeMacros(g);
                 var apertureSubstitutes = mergeApertures(g, macroSubstitutes);
-                mergeCommands(g, apertureSubstitutes, BigDecimal.valueOf(xOffset), BigDecimal.valueOf(yOffset));
+                mergeCommands(g, apertureSubstitutes, xOffset, yOffset);
             } else {
                 log.log(Level.WARNING, "Source and destination .FileFunction attrs differ, so they can't be merged");
             }
@@ -72,7 +72,7 @@ public class GerberMerger extends Merger {
         return substTable;
     }
 
-    private void mergeCommands(Gerber source, HashMap<Integer, Integer> apertureSubst, BigDecimal xOffset, BigDecimal yOffset) {
+    private void mergeCommands(Gerber source, HashMap<Integer, Integer> apertureSubst, double xOffset, double yOffset) {
         for (var cmd : source.getContents()) {
             if (cmd instanceof D01To03 d) {
                 layer.add(d.move(xOffset, yOffset));

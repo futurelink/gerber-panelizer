@@ -31,10 +31,10 @@ public class Gerber extends Layer {
             FSIndex = Commands.size();
         } else if (cmd instanceof D01To03 d) {
             // Update min and max coords
-            if (d.getX().doubleValue() < minX) minX = d.getX().doubleValue();
-            if (d.getY().doubleValue() < minY) minY = d.getY().doubleValue();
-            if (d.getX().doubleValue() > maxX) maxX = d.getX().doubleValue();
-            if (d.getY().doubleValue() > maxY) maxY = d.getY().doubleValue();
+            if (d.getX() < minX) minX = d.getX();
+            if (d.getY() < minY) minY = d.getY();
+            if (d.getX() > maxX) maxX = d.getX();
+            if (d.getY() > maxY) maxY = d.getY();
         }
         Commands.add(cmd);
     }

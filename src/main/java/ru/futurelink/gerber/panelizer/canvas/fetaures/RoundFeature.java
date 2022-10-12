@@ -10,8 +10,8 @@ abstract public class RoundFeature extends Feature {
     @Getter private final double radius;
     public RoundFeature(UUID id, Point center, double radius){
         super(id,
-            new Point(center.getX().doubleValue() - radius, center.getY().doubleValue() - radius),
-            new Point(center.getX().doubleValue() + radius, center.getY().doubleValue() + radius));
+            new Point(center.getX() - radius, center.getY() - radius),
+            new Point(center.getX() + radius, center.getY() + radius));
         this.center = center;
         this.radius = radius;
     }

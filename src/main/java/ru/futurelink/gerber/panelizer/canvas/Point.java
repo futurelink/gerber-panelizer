@@ -2,24 +2,17 @@ package ru.futurelink.gerber.panelizer.canvas;
 
 import lombok.Getter;
 
-import java.math.BigDecimal;
-
 public class Point {
-    @Getter private final BigDecimal x;
-    @Getter private final BigDecimal y;
+    @Getter private final double x;
+    @Getter private final double y;
 
     public Point(double x, double y) {
-        this.x = BigDecimal.valueOf(x);
-        this.y = BigDecimal.valueOf(y);
-    }
-
-    public Point(BigDecimal x, BigDecimal y) {
         this.x = x;
         this.y = y;
     }
 
     public Point offset(double x, double y) {
-        return new Point(getX().add(BigDecimal.valueOf(x)), getY().add(BigDecimal.valueOf(y)));
+        return new Point(getX() + x, getY() + y);
     }
 
     public Point closestOf(Point p1, Point p2) {
@@ -39,8 +32,7 @@ public class Point {
     }
 
     public static double distance(Point a, Point b) {
-        return Math.sqrt(Math.pow(a.getX().doubleValue() - b.getX().doubleValue(), 2) +
-                Math.pow(a.getY().doubleValue() - b.getY().doubleValue(), 2));
+        return Math.sqrt(Math.pow(a.getX() - b.getX(), 2) + Math.pow(a.getY() - b.getY(), 2));
     }
 
     @Override

@@ -36,8 +36,8 @@ abstract public class Feature {
     }
 
     public void moveOffset(double x, double y) {
-        this.topLeft = new Point(topLeft.getX().doubleValue() + x, topLeft.getY().doubleValue() + y);
-        this.bottomRight = new Point(bottomRight.getX().doubleValue() + x, bottomRight.getY().doubleValue() + x);
+        this.topLeft = new Point(topLeft.getX() + x, topLeft.getY() + y);
+        this.bottomRight = new Point(bottomRight.getX() + x, bottomRight.getY() + x);
     }
 
     abstract public void clean();

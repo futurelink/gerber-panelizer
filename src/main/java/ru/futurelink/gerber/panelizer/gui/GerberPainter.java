@@ -64,8 +64,8 @@ public class GerberPainter extends QPainter {
             while (hi.hasNext()) {
                 var h = hi.next();
                 var c = translatedPoint(
-                        h.getCenter().getX().doubleValue(),
-                        h.getCenter().getY().doubleValue(),
+                        h.getCenter().getX(),
+                        h.getCenter().getY(),
                         offset
                 );
                 var dia = h.getDiameter() / scale / 2;
@@ -78,8 +78,8 @@ public class GerberPainter extends QPainter {
 
     public void drawBatchOutline(QPainter painter, BatchMerger.BatchInstance b, boolean selected) {
         var rect = new QRectF(
-                Math.round((b.getTopLeft().getX().doubleValue() + center.x()) / scale),
-                -Math.round((b.getTopLeft().getY().doubleValue() - center.y()) / scale),
+                Math.round((b.getTopLeft().getX() + center.x()) / scale),
+                -Math.round((b.getTopLeft().getY() - center.y()) / scale),
                 Math.round(b.getBatch().width() / scale),
                 Math.round(b.getBatch().height() / scale));
         var textRect = painter.boundingRect(rect, b.getBatch().getName());
@@ -105,7 +105,7 @@ public class GerberPainter extends QPainter {
         var outlineLayer = b.getBatch().getLayer(Layer.Type.EdgeCuts);
         if (outlineLayer instanceof Gerber g) {
             painter.setPen(selected ? colorSettings.getSelectedPen() : new QPen(new QColor(0, 0, 0, 0), 1));
-            drawGerber(g, new QPointF(b.getOffset().getX().doubleValue(), b.getOffset().getY().doubleValue()));
+            drawGerber(g, new QPointF(b.getOffset().getX(), b.getOffset().getY()));
         }
     }
 
@@ -114,13 +114,13 @@ public class GerberPainter extends QPainter {
         var currentPoint = new QPointF(0, 0);
         for (var cmd : g.getContents()) {
             if (cmd instanceof D01To03 d) {
-                var p = new QPointF(d.getX().doubleValue(), d.getY().doubleValue());
+                var p = new QPointF(d.getX(), d.getY());
                 switch (d.getCode()) {
                     case 1:
                         if (currentInterpolation == Geometry.Interpolation.LINEAR) {
                             drawLine(translatedPoint(currentPoint, offset), translatedPoint(p, offset));
                         } else {
-                            var arcC = new QPointF(currentPoint.x() + d.getI().doubleValue(), currentPoint.y() + d.getJ().doubleValue());
+                            var arcC = new QPointF(currentPoint.x() + d.getI(), currentPoint.y() + d.getJ());
                             var radius = Math.sqrt(Math.pow(currentPoint.x() - arcC.x(), 2) + Math.pow(currentPoint.y() - arcC.y(), 2));
                             var ang1 = Math.atan2(currentPoint.y() - arcC.y(), currentPoint.x() - arcC.x());
                             var ang2 = Math.atan2(p.y() - arcC.y(), p.x() - arcC.x());
@@ -155,7 +155,7 @@ public class GerberPainter extends QPainter {
     public void drawFeature(QPainter painter, Feature f, boolean selected) {
         if (f instanceof RoundFeature m) {
             var dia = (int) Math.round(m.getRadius() / scale);
-            var c = translatedPoint(m.getCenter().getX().doubleValue(), m.getCenter().getY().doubleValue());
+            var c = translatedPoint(m.getCenter().getX(), m.getCenter().getY());
 
             painter.setPen(selected ?
                     colorSettings.getSelectedPen() :

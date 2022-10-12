@@ -6,13 +6,13 @@ import ru.futurelink.gerber.panelizer.gbr.cmd.FS;
 import java.math.BigDecimal;
 
 public class D01To03 extends DAperture {
-    @Getter private final BigDecimal x;
-    @Getter private final BigDecimal y;
+    @Getter private final double x;
+    @Getter private final double y;
 
-    @Getter private BigDecimal i;
-    @Getter private BigDecimal j;
+    @Getter private final Double i;
+    @Getter private final Double j;
 
-    public D01To03(Integer code, BigDecimal x, BigDecimal y) {
+    public D01To03(Integer code, double x, double y) {
         super(code);
         this.x = x;
         this.y = y;
@@ -20,7 +20,7 @@ public class D01To03 extends DAperture {
         this.j = null;
     }
 
-    public D01To03(Integer code, BigDecimal x, BigDecimal y, BigDecimal i, BigDecimal j) {
+    public D01To03(Integer code, double x, double y, Double i, Double j) {
         super(code);
         this.x = x;
         this.y = y;
@@ -34,32 +34,34 @@ public class D01To03 extends DAperture {
 
     public D01To03(Integer code, String x, String y, String i, String j, FS format) {
         this(code,
-                parse(x, format.getXFractional()), parse(y, format.getYFractional()),
-                parse(i, format.getXFractional()), parse(j, format.getYFractional())
+                parse(x, format.getXFractional()),
+                parse(y, format.getYFractional()),
+                parse(i, format.getXFractional()),
+                parse(j, format.getYFractional())
         );
     }
 
-    private static BigDecimal parse(String val, int fractionalLen) {
+    private static Double parse(String val, int fractionalLen) {
         if (val == null) return null;
-        return BigDecimal.valueOf(Double.parseDouble(val)).movePointLeft(fractionalLen);
+        return BigDecimal.valueOf(Double.parseDouble(val)).movePointLeft(fractionalLen).doubleValue();
     }
 
-    public D01To03 move(BigDecimal xOffset, BigDecimal yOffset) {
-        return new D01To03(this.getCode(), this.x.add(xOffset), this.y.add(yOffset), i, j);
+    public D01To03 move(double xOffset, double yOffset) {
+        return new D01To03(this.getCode(), this.x + xOffset, this.y + yOffset, i, j);
     }
 
     public String toString(FS format) {
-        var xStr = x.movePointRight(format.getXFractional()).toBigInteger();
-        var yStr = y.movePointRight(format.getYFractional()).toBigInteger();
-        var iStr = ((i != null) ? "I" + i.movePointRight(format.getXFractional()).toBigInteger() : "");
-        var jStr = ((j != null) ? "J" + j.movePointRight(format.getYFractional()).toBigInteger() : "");
+        var xStr = BigDecimal.valueOf(x).movePointRight(format.getXFractional()).toBigInteger();
+        var yStr = BigDecimal.valueOf(y).movePointRight(format.getYFractional()).toBigInteger();
+        var iStr = ((i != null) ? "I" + BigDecimal.valueOf(i).movePointRight(format.getXFractional()).toBigInteger() : "");
+        var jStr = ((j != null) ? "J" + BigDecimal.valueOf(j).movePointRight(format.getYFractional()).toBigInteger() : "");
         return String.format("X%sY%s%s%sD%02d", xStr, yStr, iStr, jStr, getCode()) + "*" ;
     }
 
     @Override
     public String toString() {
-        var xStr = x.toPlainString();
-        var yStr = y.toPlainString();
+        var xStr = BigDecimal.valueOf(x).toPlainString();
+        var yStr = BigDecimal.valueOf(y).toPlainString();
         var iStr = ((i != null) ? "I" + i : "");
         var jStr = ((j != null) ? "J" + j : "");
         return String.format("X%s Y%s %s %s D%02d", xStr, yStr, iStr, jStr, getCode());
