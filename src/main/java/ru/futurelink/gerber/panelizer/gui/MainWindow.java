@@ -9,11 +9,14 @@ import io.qt.widgets.*;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.batch.BatchMerger;
 import ru.futurelink.gerber.panelizer.batch.BatchSettings;
+import ru.futurelink.gerber.panelizer.gui.widgets.ExportSettingsDialog;
+import ru.futurelink.gerber.panelizer.gui.widgets.MergerPanelWidget;
+import ru.futurelink.gerber.panelizer.gui.widgets.ProjectManagerWidget;
 
 public class MainWindow extends QMainWindow {
     private final static String appName = "Gerber Panelizer";
     @Getter private final QMenuBar menuBar;
-    @Getter private final MergerPanel workArea;
+    @Getter private final MergerPanelWidget workArea;
 
     private final QLabel statusCoords;
     private final QLabel statusSize;
@@ -27,7 +30,7 @@ public class MainWindow extends QMainWindow {
 
         batchSettings = BatchSettings.getInstance();
 
-        workArea = new MergerPanel(this, new BatchMerger("merged"));
+        workArea = new MergerPanelWidget(this, new BatchMerger("merged"));
         setCentralWidget(workArea);
 
         statusBar = new QStatusBar(this);

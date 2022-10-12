@@ -26,7 +26,7 @@ public class MergerProject extends QObject {
     @Getter private final HashMap<UUID, BatchPlacement> batchPlacements;
     @Getter private final HashMap<UUID, FeaturePlacement> featurePlacements;
 
-    static class BatchPlacement {
+    public static class BatchPlacement {
         @Getter UUID batchUUID;
         @Getter double x;
         @Getter double y;
@@ -37,13 +37,13 @@ public class MergerProject extends QObject {
             this.y = y;
         }
 
-        void move(double x, double y) {
+        public void move(double x, double y) {
             this.x = x;
             this.y = y;
         }
     }
 
-    static class FeaturePlacement {
+    public static class FeaturePlacement {
         @Getter Class<? extends Feature> featureClass;
         @Getter double x;
         @Getter double y;
@@ -53,7 +53,7 @@ public class MergerProject extends QObject {
             this.y = y;
         }
 
-        void move(double x, double y) {
+        public void move(double x, double y) {
             this.x = x;
             this.y = y;
         }

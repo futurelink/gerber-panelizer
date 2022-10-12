@@ -1,4 +1,4 @@
-package ru.futurelink.gerber.panelizer.gui;
+package ru.futurelink.gerber.panelizer.gui.widgets;
 
 import io.qt.core.*;
 import io.qt.gui.*;
@@ -13,10 +13,13 @@ import ru.futurelink.gerber.panelizer.canvas.fetaures.Feature;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.MouseBites;
 import ru.futurelink.gerber.panelizer.exceptions.MergerException;
 import ru.futurelink.gerber.panelizer.gbr.Gerber;
+import ru.futurelink.gerber.panelizer.gui.ColorSettings;
+import ru.futurelink.gerber.panelizer.gui.GerberPainter;
+import ru.futurelink.gerber.panelizer.gui.Utils;
 
 import java.util.UUID;
 
-public class MergerPanel extends QWidget {
+public class MergerPanelWidget extends QWidget {
 
     @Getter private final BatchMerger merger;
     private double scale;
@@ -26,7 +29,6 @@ public class MergerPanel extends QWidget {
     private QPoint mousePressPoint;
     private Object instanceUnderMouse;
     private Object instanceSelected;
-    private final GerberPainter.Settings painterSettings;
     public final Signal1<QPointF> mouseMoved = new Signal1<>();
     public final Signal1<Object> deleteItem = new Signal1<>();
     public final Signal1<Object> moveItem = new Signal1<>();
@@ -37,14 +39,13 @@ public class MergerPanel extends QWidget {
     private final QAction addFeatureAction;
     private final QAction deleteAction;
 
-    public MergerPanel(QWidget parent, BatchMerger m) {
+    public MergerPanelWidget(QWidget parent, BatchMerger m) {
         super(parent);
         merger = m;
         scale = 0.25;
         margin = 0;
         center = new QPointF(10, 10);
         mousePressPoint = null;
-        painterSettings = new GerberPainter.Settings();
 
         addFeatureAction = new QAction("Add MouseBites feature");
         addFeatureAction.triggered.connect(this, "addMouseBites(boolean)");
@@ -273,7 +274,7 @@ public class MergerPanel extends QWidget {
 
     @Override
     protected void paintEvent(QPaintEvent event) {
-        var painter = new GerberPainter(this, painterSettings, scale, center);
+        var painter = new GerberPainter(this, scale, center);
         painter.setBackground(new QBrush(new QColor(40, 40, 40)));
         painter.setRenderHint(QPainter.RenderHint.Antialiasing);
 
@@ -338,7 +339,7 @@ public class MergerPanel extends QWidget {
                 Math.pow(p.y() - center.getY().doubleValue(), 2) < radius * radius);
     }
 
-    void mergeDisplayLayers() {
+    public void mergeDisplayLayers() {
         try {
             merger.mergeLayer(Layer.Type.EdgeCuts);
             merger.mergeLayer(Layer.Type.FrontMask);

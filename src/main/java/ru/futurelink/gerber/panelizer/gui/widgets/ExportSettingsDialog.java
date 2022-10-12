@@ -1,10 +1,9 @@
-package ru.futurelink.gerber.panelizer.gui;
+package ru.futurelink.gerber.panelizer.gui.widgets;
 
 import io.qt.core.Qt;
 import io.qt.gui.QBrush;
 import io.qt.gui.QColor;
 import io.qt.widgets.*;
-import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.batch.BatchSettings;
 

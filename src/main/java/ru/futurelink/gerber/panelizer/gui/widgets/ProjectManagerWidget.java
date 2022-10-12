@@ -1,4 +1,4 @@
-package ru.futurelink.gerber.panelizer.gui;
+package ru.futurelink.gerber.panelizer.gui.widgets;
 
 import io.qt.core.QFileInfo;
 import io.qt.core.QStringList;
@@ -12,6 +12,7 @@ import ru.futurelink.gerber.panelizer.canvas.fetaures.Feature;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.RoundFeature;
 import ru.futurelink.gerber.panelizer.exceptions.GerberException;
 import ru.futurelink.gerber.panelizer.exceptions.MergerException;
+import ru.futurelink.gerber.panelizer.gui.MergerProject;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,13 +22,14 @@ import java.util.UUID;
 public class ProjectManagerWidget extends QDockWidget {
     private final QTreeWidget projectTree;
     @Getter private MergerProject project;
-    @Getter MergerPanel workArea;
+    @Getter
+    MergerPanelWidget workArea;
     @Getter private boolean modified;
     @Getter private String filename;
 
     public final Signal1<String> projectNameChanged = new Signal1<>();
 
-    public ProjectManagerWidget(QWidget parent, MergerPanel workArea) {
+    public ProjectManagerWidget(QWidget parent, MergerPanelWidget workArea) {
         super(parent);
         setFeatures(DockWidgetFeature.NoDockWidgetFeatures);
         setWindowTitle("Project structure");
@@ -158,7 +160,7 @@ public class ProjectManagerWidget extends QDockWidget {
         refresh();
     }
 
-    final void newProject() {
+    public final void newProject() {
         filename = null;
         project = new MergerProject(this);
         setProject(project);
@@ -166,7 +168,7 @@ public class ProjectManagerWidget extends QDockWidget {
         projectNameChanged.emit(getProjectName());
     }
 
-    final void openProject() {
+    public final void openProject() {
         try {
             var dlg = new QFileDialog(this);
             dlg.setWindowTitle("Open project");
@@ -210,7 +212,7 @@ public class ProjectManagerWidget extends QDockWidget {
         }
     }
 
-    final void saveProject() {
+    public final void saveProject() {
         var settings = BatchSettings.getInstance();
         try {
             if (filename != null) {
@@ -233,7 +235,7 @@ public class ProjectManagerWidget extends QDockWidget {
         }
     }
 
-    final void saveProjectAs() {
+    public final void saveProjectAs() {
         var settings = BatchSettings.getInstance();
         var dlg = new QFileDialog(this);
         dlg.setWindowTitle("Save project as...");
@@ -252,7 +254,7 @@ public class ProjectManagerWidget extends QDockWidget {
         }
     }
 
-    final void addBatch() {
+    public final void addBatch() {
         try {
             var dlg = new QFileDialog(this);
             dlg.setWindowTitle("Add batch ZIP...");
@@ -268,7 +270,7 @@ public class ProjectManagerWidget extends QDockWidget {
         }
     }
 
-    void export() {
+    public void export() {
         var settings = BatchSettings.getInstance();
         var dlg = new QFileDialog(this);
         dlg.setWindowTitle("Export merged batch ZIP...");
