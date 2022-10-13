@@ -14,6 +14,8 @@ public class ColorSettings {
     @Getter private final QPen invalidFeaturePen;
     @Getter private final QPen marksPen;
 
+    @Getter private final QPen tracksPen;
+
     private static ColorSettings instance = null;
 
     public static ColorSettings getInstance() {
@@ -25,7 +27,8 @@ public class ColorSettings {
 
     private ColorSettings() {
         axisPen = new QPen(new QColor(200, 200, 200), 1);
-        drillPen = new QPen(new QColor(180, 180, 180), 1);
+        drillPen = new QPen(new QColor(50, 50, 50), 1);
+        tracksPen = new QPen(new QColor(180, 180, 180), 1);
         outlinePen = new QPen(new QColor(0, 0, 0, 255), 1);
         selectedPen = new QPen(new QColor(0, 0, 200), 2);
         validFeaturePen = new QPen(new QColor(0, 200, 0), 1);

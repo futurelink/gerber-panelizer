@@ -1,22 +1,24 @@
 package ru.futurelink.gerber.panelizer.gui;
 
-import io.qt.core.QPointF;
-import io.qt.core.QRectF;
-import io.qt.core.QSizeF;
-import io.qt.gui.QColor;
-import io.qt.gui.QPainter;
-import io.qt.gui.QPen;
+import io.qt.core.*;
+import io.qt.gui.*;
 import io.qt.widgets.QWidget;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.batch.BatchMerger;
+import ru.futurelink.gerber.panelizer.canvas.Aperture;
 import ru.futurelink.gerber.panelizer.canvas.Geometry;
+import ru.futurelink.gerber.panelizer.canvas.Macro;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.Feature;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.RoundFeature;
 import ru.futurelink.gerber.panelizer.drl.Excellon;
 import ru.futurelink.gerber.panelizer.gbr.Gerber;
 import ru.futurelink.gerber.panelizer.gbr.cmd.d.D01To03;
+import ru.futurelink.gerber.panelizer.gbr.cmd.d.DAperture;
 import ru.futurelink.gerber.panelizer.gbr.cmd.g.GCode;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class GerberPainter extends QPainter {
     @Getter private final double scale;
@@ -58,7 +60,7 @@ public class GerberPainter extends QPainter {
         drawLine((int) cx - 10, (int) bottomRight.y(), (int) cx + 10, (int) bottomRight.y());
     }
 
-    public void drawHoles(QPainter painter, Layer layer, QPointF offset) {
+    public void drawHoles(Layer layer, QPointF offset) {
         if (layer instanceof Excellon e) {
             var hi = e.holes();
             while (hi.hasNext()) {
@@ -70,55 +72,82 @@ public class GerberPainter extends QPainter {
                 );
                 var dia = h.getDiameter() / scale / 2;
 
-                painter.setPen(colorSettings.getDrillPen());
-                painter.drawEllipse(c, dia, dia);
+                setPen(Qt.PenStyle.NoPen);
+                setBrush(new QBrush(colorSettings.getDrillPen().color()));
+                drawEllipse(c, dia, dia);
+                setBrush(Qt.BrushStyle.NoBrush);
             }
         }
     }
 
-    public void drawBatchOutline(QPainter painter, BatchMerger.BatchInstance b, boolean selected) {
+    public final void drawBatchOutline(QPainter painter, BatchMerger.BatchInstance b, boolean selected) {
         var rect = new QRectF(
                 Math.round((b.getTopLeft().getX() + center.x()) / scale),
                 -Math.round((b.getTopLeft().getY() - center.y()) / scale),
                 Math.round(b.getBatch().width() / scale),
                 Math.round(b.getBatch().height() / scale));
         var textRect = painter.boundingRect(rect, b.getBatch().getName());
-
         // Board batch title
         // -----------------
         painter.setPen(selected ? colorSettings.getSelectedPen() : colorSettings.getOutlinePen());
-        painter.drawText(
+        drawText(
                 new QPointF(
                         rect.x() + rect.width() / 2 - (float) textRect.width() / 2,
                         rect.y() + rect.height() / 2
                 ), b.getBatch().getName());
         var sizeString = String.format("%s", b.getSize());
         textRect = painter.boundingRect(rect, sizeString);
-        painter.drawText(
+        drawText(
                 new QPointF(
                         rect.x() + rect.width() / 2 - (float) textRect.width() / 2,
                         rect.y() + rect.height() / 2 + 16
                 ), sizeString);
+        painter.setPen(Qt.PenStyle.NoPen);
 
         // Board outline
         // -------------
         var outlineLayer = b.getBatch().getLayer(Layer.Type.EdgeCuts);
         if (outlineLayer instanceof Gerber g) {
-            painter.setPen(selected ? colorSettings.getSelectedPen() : new QPen(new QColor(0, 0, 0, 0), 1));
-            drawGerber(g, new QPointF(b.getOffset().getX(), b.getOffset().getY()));
+            drawGerber(g,
+                    new QPointF(b.getOffset().getX(), b.getOffset().getY()),
+                    null,
+                    null,
+                    selected ? colorSettings.getSelectedPen() : new QPen(Qt.PenStyle.NoPen));
         }
     }
 
-    public void drawGerber(Gerber g, QPointF offset) {
+    public final void drawGerber(Gerber g,
+                                 final QPointF offset,
+                                 final HashMap<Integer, Aperture> apertures,
+                                 final HashMap<String, Macro> macros,
+                                 QPen pen) {
+        Aperture currentAperture = null;
         var currentInterpolation = Geometry.Interpolation.LINEAR;
         var currentPoint = new QPointF(0, 0);
+        var polygonMode = false;
+        var polygonPoints = new ArrayList<QPointF>();
+        var brush = new QBrush(pen.color());
+
+        setPen(Qt.PenStyle.NoPen);
+        setBrush(Qt.BrushStyle.NoBrush);
+
         for (var cmd : g.getContents()) {
             if (cmd instanceof D01To03 d) {
                 var p = new QPointF(d.getX(), d.getY());
                 switch (d.getCode()) {
                     case 1:
                         if (currentInterpolation == Geometry.Interpolation.LINEAR) {
-                            drawLine(translatedPoint(currentPoint, offset), translatedPoint(p, offset));
+                            if (polygonMode) {
+                                polygonPoints.add(translatedPoint(p, offset));
+                            } else {
+                                if (currentAperture != null) {
+                                    setPen(new QPen(pen.color(), currentAperture.getMeasures().get(0) / scale));
+                                } else {
+                                    setPen(pen);
+                                }
+                                drawLine(translatedPoint(currentPoint, offset), translatedPoint(p, offset));
+                                setPen(Qt.PenStyle.NoPen);
+                            }
                         } else {
                             var arcC = new QPointF(currentPoint.x() + d.getI(), currentPoint.y() + d.getJ());
                             var radius = Math.sqrt(Math.pow(currentPoint.x() - arcC.x(), 2) + Math.pow(currentPoint.y() - arcC.y(), 2));
@@ -131,11 +160,18 @@ public class GerberPainter extends QPainter {
                                     radius * 2 / scale, -radius * 2 / scale);
                             // drawRect(arcRect);
                             //drawEllipse(translatedPoint(currentPoint, offset), 2, 2);
-                            // System.out.println("Ang1 = " + ang1 + "Ang2 = " + ang2 + ", Rot=" + aRot);
+                            setPen(pen);
                             drawArc(arcRect, (int) (ang1 * arcQ), (int) ((ang2 - ang1) * arcQ));
+                            setPen(Qt.PenStyle.NoPen);
                         }
                         break;
-                    case 3: // Not supported yet
+                    case 3:
+                        if (apertures != null) {
+                            setBrush(brush);
+                            drawAperture(translatedPoint(p, offset), currentAperture, macros);
+                            setBrush(Qt.BrushStyle.NoBrush);
+                        }
+                        break;
                     default: break;
                 }
                 currentPoint = p;
@@ -147,28 +183,88 @@ public class GerberPainter extends QPainter {
                         case 3 -> Geometry.Interpolation.CCW;
                         default -> null;
                     };
+                } else if (gcode.getCode() == 36) {
+                    polygonPoints.clear();
+                    polygonMode = true;
+                } else if (gcode.getCode() == 37) {
+                    if (polygonMode) {
+                        setBrush(brush);
+                        drawPolygon(polygonPoints.toArray(QPointF[]::new));
+                        setBrush(Qt.BrushStyle.NoBrush);
+                        polygonMode = false;
+                    }
+                }
+            } else if ((apertures != null) && (cmd instanceof DAperture a)) {
+                currentAperture = apertures.get(a.getCode());
+            }
+        }
+    }
+
+    public void drawAperture(final QPointF p, final Aperture a, final HashMap<String, Macro> macros) {
+        if (a == null) return;
+
+        switch (a.getMacro()) {
+            case "C" -> {   // Circle
+                var radius = a.getMeasures().get(0) / scale / 2;
+                drawEllipse(p, radius, radius);
+            }
+            case "O" ->     // Oval
+                    drawEllipse(p, a.getMeasures().get(0) / scale / 2, a.getMeasures().get(1) / scale / 2);
+
+            case "R" -> {   // Rectangle
+                var rx = a.getMeasures().get(0) / scale / 2;
+                var ry = a.getMeasures().get(1) / scale / 2;
+                drawRect(new QRectF(p.x() - rx, p.y() - ry, rx * 2, ry * 2));
+            }
+            default ->      // Macro name
+                    drawMacro(p, macros.get(a.getMacro()), a.getMeasures().toArray(Double[]::new), brush().color());
+        }
+    }
+
+    public final void drawMacro(final QPointF p, Macro macro, Double[] measures, QColor color) {
+        var result = macro.eval(measures);
+        for (var r : result) {
+            switch (r.getType()) {
+                case Circle -> {
+                    var dia = r.getValue(0) / scale / 2;
+                    var center = new QPointF(r.getValue(1) / scale, -r.getValue(2) / scale).add(p);
+                    drawEllipse(center, dia, dia);
+                }
+                case Outline -> {
+                    var poly = new QPolygonF();
+                    for (var i = 0; i < r.getValue(0) * 2; i+=2) {
+                        poly.append(new QPointF(r.getValue(i+1) / scale, -r.getValue(i+2) / scale).add(p));
+                    }
+                    drawPolygon(poly);
+                }
+                case VectorLine -> {
+                    setPen(new QPen(color, r.getValue(0) / scale));
+                    drawLine(new QPointF(r.getValue(1) / scale, -r.getValue(2) / scale).add(p),
+                            new QPointF(r.getValue(3) / scale, -r.getValue(4) / scale).add(p));
+                    setPen(Qt.PenStyle.NoPen);
                 }
             }
         }
     }
 
-    public void drawFeature(QPainter painter, Feature f, boolean selected) {
+    public void drawFeature(Feature f, boolean selected) {
         if (f instanceof RoundFeature m) {
             var dia = (int) Math.round(m.getRadius() / scale);
             var c = translatedPoint(m.getCenter().getX(), m.getCenter().getY());
 
-            painter.setPen(selected ?
+            setPen(selected ?
                     colorSettings.getSelectedPen() :
                     m.isValid() ? colorSettings.getValidFeaturePen() : colorSettings.getInvalidFeaturePen()
             );
 
             // Draw feature sign
-            painter.drawEllipse(c, dia, dia);
+            drawEllipse(c, dia, dia);
             if (!m.isValid()) {
                 var r = m.getRadius() / scale / 2;
-                painter.drawLine((int) (c.x() - r), (int) (c.y() - r), (int) (c.x() + r), (int) (c.y() + r));
-                painter.drawLine((int) (c.x() + r), (int) (c.y() - r), (int) (c.x() - r), (int) (c.y() + r));
+                drawLine((int) (c.x() - r), (int) (c.y() - r), (int) (c.x() + r), (int) (c.y() + r));
+                drawLine((int) (c.x() + r), (int) (c.y() - r), (int) (c.x() - r), (int) (c.y() + r));
             }
+            setPen(Qt.PenStyle.NoPen);
         }
     }
 

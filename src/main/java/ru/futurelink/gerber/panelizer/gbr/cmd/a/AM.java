@@ -3,6 +3,7 @@ package ru.futurelink.gerber.panelizer.gbr.cmd.a;
 import ru.futurelink.gerber.panelizer.gbr.cmd.CommandNamed;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class AM extends CommandNamed {
     private final ArrayList<String> Blocks;
@@ -14,6 +15,10 @@ public class AM extends CommandNamed {
 
     private void addBlock(String block) {
         this.Blocks.add(block);
+    }
+
+    public Iterator<String> blocks() {
+        return Blocks.iterator();
     }
 
     static public AM fromString(String str) {

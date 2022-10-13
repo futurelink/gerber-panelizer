@@ -2,6 +2,9 @@ package ru.futurelink.gerber.panelizer.gui.widgets;
 
 import io.qt.core.QFileInfo;
 import io.qt.core.QStringList;
+import io.qt.core.Qt;
+import io.qt.gui.QBrush;
+import io.qt.gui.QColor;
 import io.qt.widgets.*;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.batch.BatchMerger;
@@ -40,6 +43,7 @@ public class ProjectManagerWidget extends QDockWidget {
 
         projectTree = new QTreeWidget(this);
         projectTree.setColumnCount(2);
+        projectTree.setColumnWidth(0, width() / 2);
         setWidget(projectTree);
     }
 
@@ -48,37 +52,52 @@ public class ProjectManagerWidget extends QDockWidget {
         projectTree.setHeaderLabels(new QStringList("Part", "Details"));
 
         // Add top-level items
+        var bgBrush = new QBrush(new QColor(200, 200, 200));
         var batchesItem = new QTreeWidgetItem(projectTree, new QStringList("Batches"));
+        var font = batchesItem.font(1);
+        font.setBold(true);
+        batchesItem.setFont(0, font);
+        batchesItem.setBackground(0, bgBrush);
+        batchesItem.setBackground(1, bgBrush);
+
         var featuresItem = new QTreeWidgetItem(projectTree, new QStringList("Features"));
+        featuresItem.setFont(0, font);
+        featuresItem.setBackground(0, bgBrush);
+        featuresItem.setBackground(1, bgBrush);
 
         // Fill project contents
         var batches = project.getBatches();
-        for (var b : batches.keySet()) {
+        for (var bUUID : batches.keySet()) {
             var item = new QTreeWidgetItem(batchesItem, new QStringList(
-                    batches.get(b).getName(),
-                    b.toString()
+                    batches.get(bUUID).getName(),
+                    bUUID.toString()
             ));
-            for (var bk : project.getBatchPlacements().keySet()) {
-                var bi = project.getBatchPlacements().get(bk);
-                if (bi.getBatchUUID().equals(b)) {
-                    item.addChild(new QTreeWidgetItem(item, new QStringList(
-                            String.format("%s", bk),
+            var ic = 0;
+            for (var biUUID : project.getBatchPlacements().keySet()) {
+                var bi = project.getBatchPlacements().get(biUUID);
+                if (bi.getBatchUUID().equals(bUUID)) {
+                    ic++;
+                    var biItem = new QTreeWidgetItem(item, new QStringList(
+                            String.format("%d", ic),
                             String.format("%.4f", bi.getX()) + " x " + String.format("%.4f", bi.getY())
-                    )));
+                    ));
+                    biItem.setTextAlignment(1, Qt.AlignmentFlag.AlignRight.value());
+                    item.addChild(biItem);
                 }
             }
+            item.setText(1, String.format("%d instances", ic)); // Count of instances
             item.setExpanded(true);
             batchesItem.addChild(item);
         }
 
         for (var b : project.getFeaturePlacements().keySet()) {
             var f = project.getFeaturePlacements().get(b);
-            batchesItem.addChild(
-                    new QTreeWidgetItem(featuresItem, new QStringList(
-                            f.getFeatureClass().getSimpleName(),
-                            String.format("%.4f", f.getX()) + " x " + String.format("%.4f", f.getY())
-                    ))
-            );
+            var item = new QTreeWidgetItem(featuresItem, new QStringList(
+                    f.getFeatureClass().getSimpleName(),
+                    String.format("%.4f", f.getX()) + " x " + String.format("%.4f", f.getY())
+            ));
+            item.setTextAlignment(1, Qt.AlignmentFlag.AlignRight.value());
+            batchesItem.addChild(item);
         }
 
         featuresItem.setExpanded(true);
@@ -113,8 +132,13 @@ public class ProjectManagerWidget extends QDockWidget {
             var f = constr.newInstance(UUID.randomUUID(), new Point(fp.getX(), fp.getY()), 5);
             project.addFeaturePlacement(f.getId(), fp);
             workArea.addFeature(f);
-            workArea.mergeDisplayLayers();
-            refresh();
+            try {
+                workArea.mergeDisplayLayers();
+            } catch (MergerException e) {
+                e.printStackTrace();
+            } finally {
+                refresh();
+            }
         } catch (NoSuchMethodException | InvocationTargetException |
                  InstantiationException | IllegalAccessException ex) {
             ex.printStackTrace();
@@ -122,10 +146,16 @@ public class ProjectManagerWidget extends QDockWidget {
     }
 
     // Slot
-    private void addBatchItem(UUID batchUUID, double x, double y) throws MergerException {
+    private void addBatchItem(UUID batchUUID, double x, double y) {
         var id = project.addBatchPlacement(batchUUID, x, y);
-        workArea.placeBatchInstance(id, batchUUID, x, y);
-        workArea.mergeDisplayLayers();
+        try {
+            workArea.placeBatchInstance(id, batchUUID, x, y);
+            workArea.mergeDisplayLayers();
+        } catch (MergerException e) {
+            e.printStackTrace();
+        } finally {
+            refresh();
+        }
         refresh();
     }
 

@@ -2,11 +2,8 @@ package ru.futurelink.gerber.panelizer.test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.qt.core.QRectF;
 import org.junit.jupiter.api.Test;
 import ru.futurelink.gerber.panelizer.gui.Utils;
-
-import java.util.ArrayList;
 
 public class UtilsTest {
 

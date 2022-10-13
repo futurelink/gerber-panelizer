@@ -8,14 +8,21 @@ import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.batch.Batch;
 import ru.futurelink.gerber.panelizer.batch.BatchMerger;
+import ru.futurelink.gerber.panelizer.canvas.Aperture;
+import ru.futurelink.gerber.panelizer.canvas.Macro;
 import ru.futurelink.gerber.panelizer.canvas.Point;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.Feature;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.MouseBites;
 import ru.futurelink.gerber.panelizer.exceptions.MergerException;
 import ru.futurelink.gerber.panelizer.gbr.Gerber;
+import ru.futurelink.gerber.panelizer.gbr.cmd.a.AD;
+import ru.futurelink.gerber.panelizer.gbr.cmd.a.AM;
+import ru.futurelink.gerber.panelizer.gui.ColorSettings;
 import ru.futurelink.gerber.panelizer.gui.GerberPainter;
 import ru.futurelink.gerber.panelizer.gui.Utils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.UUID;
 
 public class MergerPanelWidget extends QWidget {
@@ -23,6 +30,8 @@ public class MergerPanelWidget extends QWidget {
     @Getter private final BatchMerger merger;
     private double scale;
     @Getter private double margin;
+    private final HashMap<Layer.Type, HashMap<Integer, Aperture>> apertures;
+    private final HashMap<Layer.Type, HashMap<String, Macro>> macros;
     private QPointF center;
     private QPointF mousePosition;
     private QPoint mousePressPoint;
@@ -37,6 +46,7 @@ public class MergerPanelWidget extends QWidget {
 
     private final QAction addFeatureAction;
     private final QAction deleteAction;
+    private final ColorSettings colorSettings = ColorSettings.getInstance();
 
     public MergerPanelWidget(QWidget parent, BatchMerger m) {
         super(parent);
@@ -45,6 +55,8 @@ public class MergerPanelWidget extends QWidget {
         margin = 0;
         center = new QPointF(10, 10);
         mousePressPoint = null;
+        apertures = new HashMap<>();
+        macros = new HashMap<>();
 
         addFeatureAction = new QAction("Add MouseBites feature");
         addFeatureAction.triggered.connect(this, "addMouseBites(boolean)");
@@ -67,14 +79,24 @@ public class MergerPanelWidget extends QWidget {
             getMerger().removeBatchInstance(b);
         }
         deleteItem.emit(instanceUnderMouse);
-        mergeDisplayLayers();
-        repaint();
+        try {
+            mergeDisplayLayers();
+        } catch (MergerException e) {
+            e.printStackTrace();
+        } finally {
+            repaint();
+        }
     }
 
     private void addMouseBites(boolean t) {
         addFeatureItem.emit(MouseBites.class, mousePosition.x(), mousePosition.y());
-        mergeDisplayLayers();
-        repaint();
+        try {
+            mergeDisplayLayers();
+        } catch (MergerException e) {
+            e.printStackTrace();
+        } finally {
+            repaint();
+        }
     }
 
     @Override
@@ -281,10 +303,14 @@ public class MergerPanelWidget extends QWidget {
 
         // Draw merged layers
         // ------------------
-        painter.drawHoles(painter, merger.getMergedBatch().getLayer(Layer.Type.TopDrill), null);
         if (merger.getMergedBatch().getLayer(Layer.Type.EdgeCuts) instanceof Gerber fullOutline) {
             painter.setPen(new QPen(new QColor(0, 0, 0), 1));
-            painter.drawGerber(fullOutline, null);
+            painter.drawGerber(
+                    fullOutline, null,
+                    getApertures(Layer.Type.EdgeCuts),
+                    getMacros(Layer.Type.EdgeCuts),
+                    colorSettings.getOutlinePen()
+            );
 
             var w = fullOutline.getMaxX() - fullOutline.getMinX();
             var h = fullOutline.getMaxY() - fullOutline.getMinY();
@@ -292,8 +318,7 @@ public class MergerPanelWidget extends QWidget {
         }
 
         /*if (merger.getMergedBatch().getLayer(Layer.Type.FrontMask) instanceof Gerber g) {
-            painter.setPen(new QPen(new QColor(160, 160, 160), 1));
-            painter.drawGerber(g, null);
+            painter.drawGerber(g, null, getApertures(Layer.Type.FrontMask), getMacros(Layer.Type.FrontMask), colorSettings.getTracksPen());
         }*/
 
         // Paint merger boards
@@ -309,12 +334,23 @@ public class MergerPanelWidget extends QWidget {
         var fi = merger.features();
         while (fi.hasNext()) {
             var f = fi.next();
-            painter.drawFeature(painter, f, f.equals(instanceUnderMouse));
+            painter.drawFeature(f, f.equals(instanceUnderMouse));
         }
 
+        painter.drawHoles(merger.getMergedBatch().getLayer(Layer.Type.TopDrill), null);
+
         // Draw border
-        painter.setPen(new QPen(new QColor(100, 100, 100)));
+        painter.setPen(colorSettings.getAxisPen());
+        painter.setBrush(Qt.BrushStyle.NoBrush);
         painter.drawRect(0, 0, width()-1, height()-1);
+    }
+
+    private HashMap<Integer, Aperture> getApertures(Layer.Type type) {
+        return apertures.get(type);
+    }
+
+    private HashMap<String, Macro> getMacros(Layer.Type type) {
+        return macros.get(type);
     }
 
     public void addBatch(UUID id, Batch b) {
@@ -338,15 +374,44 @@ public class MergerPanelWidget extends QWidget {
                 Math.pow(p.y() - center.getY(), 2) < radius * radius);
     }
 
-    public void mergeDisplayLayers() {
-        try {
-            merger.mergeLayer(Layer.Type.EdgeCuts);
-            merger.mergeLayer(Layer.Type.FrontMask);
-            merger.mergeLayer(Layer.Type.TopDrill);
-        } catch (MergerException ex) {
-            ex.printStackTrace();
-        }
+    public void mergeDisplayLayers() throws MergerException {
+        merger.mergeLayer(Layer.Type.EdgeCuts);
+
+        // Reload apertures & macros
+        merger.mergeLayer(Layer.Type.FrontMask);
+        loadApertures(Layer.Type.FrontMask);
+        loadMacros(Layer.Type.FrontMask);
+
+        // Drill merge MUST be the last one, because
+        // hole can be created by other layers' features.
+        merger.mergeLayer(Layer.Type.TopDrill);
+
         batchChanged.emit(new QSizeF(merger.getMergedBatch().width(), merger.getMergedBatch().height()));
+    }
+
+    private void loadApertures(Layer.Type type) {
+        var layer = merger.getMergedBatch().getLayer(type);
+        if (layer instanceof Gerber g) {
+            apertures.put(type, new HashMap<>());
+            for (var cmd : g.getApertures()) {
+                if (cmd instanceof AD a)
+                    apertures.get(type).put(a.getCode(), new Aperture(a.getMacro(), a.getValue()));
+            }
+        }
+    }
+
+    private void loadMacros(Layer.Type type) {
+        var layer = merger.getMergedBatch().getLayer(type);
+        if (layer instanceof Gerber g) {
+            macros.put(type, new HashMap<>());
+            for (var cmd : g.getMacros()) {
+                if (cmd instanceof AM a) {
+                    var t = new ArrayList<String>();
+                    a.blocks().forEachRemaining(t::add);
+                    macros.get(type).put(a.getName(), new Macro(t));
+                }
+            }
+        }
     }
 
     public final void clear() {
