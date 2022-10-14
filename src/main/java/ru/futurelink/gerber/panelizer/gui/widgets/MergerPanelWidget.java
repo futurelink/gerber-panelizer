@@ -47,6 +47,7 @@ public class MergerPanelWidget extends QWidget {
     private final QAction addFeatureAction;
     private final QAction deleteAction;
     private final ColorSettings colorSettings = ColorSettings.getInstance();
+    private final Layer.Type additionalLayerType = null; //Layer.Type.FrontSilk;
 
     public MergerPanelWidget(QWidget parent, BatchMerger m) {
         super(parent);
@@ -317,9 +318,13 @@ public class MergerPanelWidget extends QWidget {
             painter.drawBoundingBoxMarks(new QRectF(fullOutline.getMinX(), fullOutline.getMinY(), w, h));
         }
 
-        /*if (merger.getMergedBatch().getLayer(Layer.Type.FrontMask) instanceof Gerber g) {
-            painter.drawGerber(g, null, getApertures(Layer.Type.FrontMask), getMacros(Layer.Type.FrontMask), colorSettings.getTracksPen());
-        }*/
+        if (merger.getMergedBatch().getLayer(additionalLayerType) instanceof Gerber g) {
+            painter.drawGerber(g,
+                    null,
+                    getApertures(additionalLayerType),
+                    getMacros(additionalLayerType),
+                    colorSettings.getTracksPen());
+        }
 
         // Paint merger boards
         // -------------------
@@ -378,9 +383,11 @@ public class MergerPanelWidget extends QWidget {
         merger.mergeLayer(Layer.Type.EdgeCuts);
 
         // Reload apertures & macros
-        merger.mergeLayer(Layer.Type.FrontMask);
-        loadApertures(Layer.Type.FrontMask);
-        loadMacros(Layer.Type.FrontMask);
+        if (additionalLayerType != null) {
+            merger.mergeLayer(additionalLayerType);
+            loadApertures(additionalLayerType);
+            loadMacros(additionalLayerType);
+        }
 
         // Drill merge MUST be the last one, because
         // hole can be created by other layers' features.

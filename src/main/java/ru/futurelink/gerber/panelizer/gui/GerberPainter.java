@@ -140,28 +140,13 @@ public class GerberPainter extends QPainter {
                             if (polygonMode) {
                                 polygonPoints.add(translatedPoint(p, offset));
                             } else {
-                                if (currentAperture != null) {
-                                    setPen(new QPen(pen.color(), currentAperture.getMeasures().get(0) / scale));
-                                } else {
-                                    setPen(pen);
-                                }
-                                drawLine(translatedPoint(currentPoint, offset), translatedPoint(p, offset));
+                                setPen(pen);
+                                drawApertureLine(translatedPoint(currentPoint, offset), translatedPoint(p, offset), currentAperture);
                                 setPen(Qt.PenStyle.NoPen);
                             }
                         } else {
-                            var arcC = new QPointF(currentPoint.x() + d.getI(), currentPoint.y() + d.getJ());
-                            var radius = Math.sqrt(Math.pow(currentPoint.x() - arcC.x(), 2) + Math.pow(currentPoint.y() - arcC.y(), 2));
-                            var ang1 = Math.atan2(currentPoint.y() - arcC.y(), currentPoint.x() - arcC.x());
-                            var ang2 = Math.atan2(p.y() - arcC.y(), p.x() - arcC.x());
-                            if ((currentInterpolation == Geometry.Interpolation.CCW) && (ang2 < 0)) ang2 = ang2 + 2 * Math.PI;
-                            var arcRect = new QRectF(
-                                    (arcC.x() - radius + center.x() + ((offset != null) ? offset.x() : 0)) / scale,
-                                    -(arcC.y() - radius - center.y() + ((offset != null) ? offset.y() : 0)) / scale,
-                                    radius * 2 / scale, -radius * 2 / scale);
-                            // drawRect(arcRect);
-                            //drawEllipse(translatedPoint(currentPoint, offset), 2, 2);
                             setPen(pen);
-                            drawArc(arcRect, (int) (ang1 * arcQ), (int) ((ang2 - ang1) * arcQ));
+                            drawApertureArc(currentPoint, p, currentInterpolation, offset, currentAperture, d);
                             setPen(Qt.PenStyle.NoPen);
                         }
                         break;
@@ -198,6 +183,31 @@ public class GerberPainter extends QPainter {
                 currentAperture = apertures.get(a.getCode());
             }
         }
+    }
+
+    public void drawApertureArc(QPointF currentPoint, QPointF point, Geometry.Interpolation interpolation, QPointF offset, Aperture aperture, D01To03 d) {
+        var arcC = new QPointF(currentPoint.x() + d.getI(), currentPoint.y() + d.getJ());
+        var radius = Math.sqrt(Math.pow(currentPoint.x() - arcC.x(), 2) + Math.pow(currentPoint.y() - arcC.y(), 2));
+        var ang1 = Math.atan2(currentPoint.y() - arcC.y(), currentPoint.x() - arcC.x());
+        var ang2 = Math.atan2(point.y() - arcC.y(), point.x() - arcC.x());
+        if ((interpolation == Geometry.Interpolation.CCW) && (ang2 < 0)) ang2 = ang2 + 2 * Math.PI;
+        var arcRect = new QRectF(
+                (arcC.x() - radius + center.x() + ((offset != null) ? offset.x() : 0)) / scale,
+                -(arcC.y() - radius - center.y() + ((offset != null) ? offset.y() : 0)) / scale,
+                radius * 2 / scale, -radius * 2 / scale);
+
+        var pen = new QPen(pen());
+        if (aperture != null) pen.setWidth((int) (aperture.getMeasures().get(0) / scale));
+        setPen(pen);
+        drawArc(arcRect, (int) (ang1 * arcQ), (int) ((ang2 - ang1) * arcQ));
+        setPen(Qt.PenStyle.NoPen);
+    }
+
+    public void drawApertureLine(final QPointF start, final QPointF end, final Aperture aperture) {
+        var pen = new QPen(pen());
+        if (aperture != null) pen.setWidth((int) (aperture.getMeasures().get(0) / scale));
+        setPen(pen);
+        drawLine(start, end);
     }
 
     public void drawAperture(final QPointF p, final Aperture a, final HashMap<String, Macro> macros) {
