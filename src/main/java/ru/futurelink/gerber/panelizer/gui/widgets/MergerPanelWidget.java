@@ -47,7 +47,7 @@ public class MergerPanelWidget extends QWidget {
     private final QAction addFeatureAction;
     private final QAction deleteAction;
     private final ColorSettings colorSettings = ColorSettings.getInstance();
-    private final Layer.Type additionalLayerType = null; //Layer.Type.FrontSilk;
+    private final Layer.Type additionalLayerType = Layer.Type.FrontSilk;
 
     public MergerPanelWidget(QWidget parent, BatchMerger m) {
         super(parent);
@@ -296,6 +296,10 @@ public class MergerPanelWidget extends QWidget {
 
     @Override
     protected void paintEvent(QPaintEvent event) {
+        paintInternal();
+    }
+
+    private void paintInternal() {
         var painter = new GerberPainter(this, scale, center);
         painter.setBackground(new QBrush(new QColor(40, 40, 40)));
         painter.setRenderHint(QPainter.RenderHint.Antialiasing);

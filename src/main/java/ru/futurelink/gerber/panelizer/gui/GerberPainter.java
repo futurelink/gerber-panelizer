@@ -26,13 +26,23 @@ public class GerberPainter extends QPainter {
     private final ColorSettings colorSettings = ColorSettings.getInstance();
     private final static double arcQ = 2880 / Math.PI;
 
+    static class ArcCache {
+        private QPointF center;
+        private double radius;
+        private double angStart;
+        private double angSpan;
+    }
+
+    private final HashMap<D01To03, ArcCache> arcCache;
+
     public GerberPainter(QWidget parent, double scale, QPointF center) {
         super(parent);
         this.scale = scale;
         this.center = center;
+        this.arcCache = new HashMap<>();
     }
 
-    public void drawAxis(QPointF center, int width, int height) {
+    public final void drawAxis(QPointF center, int width, int height) {
         setPen(colorSettings.getAxisPen());
         drawLine(
                 (int) Math.round(center.x() / scale), 0,
@@ -42,7 +52,7 @@ public class GerberPainter extends QPainter {
                 width, (int) Math.round(center.y() / scale));
     }
 
-    public void drawBoundingBoxMarks(QRectF box) {
+    public final void drawBoundingBoxMarks(QRectF box) {
         setPen(colorSettings.getMarksPen());
 
         // Bounding box
@@ -60,7 +70,7 @@ public class GerberPainter extends QPainter {
         drawLine((int) cx - 10, (int) bottomRight.y(), (int) cx + 10, (int) bottomRight.y());
     }
 
-    public void drawHoles(Layer layer, QPointF offset) {
+    public final void drawHoles(Layer layer, QPointF offset) {
         if (layer instanceof Excellon e) {
             var hi = e.holes();
             while (hi.hasNext()) {
@@ -146,7 +156,7 @@ public class GerberPainter extends QPainter {
                             }
                         } else {
                             setPen(pen);
-                            drawApertureArc(currentPoint, p, currentInterpolation, offset, currentAperture, d);
+                            drawApertureArc(currentPoint, currentInterpolation, offset, currentAperture, d);
                             setPen(Qt.PenStyle.NoPen);
                         }
                         break;
@@ -185,32 +195,41 @@ public class GerberPainter extends QPainter {
         }
     }
 
-    public void drawApertureArc(QPointF currentPoint, QPointF point, Geometry.Interpolation interpolation, QPointF offset, Aperture aperture, D01To03 d) {
-        var arcC = new QPointF(currentPoint.x() + d.getI(), currentPoint.y() + d.getJ());
-        var radius = Math.sqrt(Math.pow(currentPoint.x() - arcC.x(), 2) + Math.pow(currentPoint.y() - arcC.y(), 2));
-        var ang1 = Math.atan2(currentPoint.y() - arcC.y(), currentPoint.x() - arcC.x());
-        var ang2 = Math.atan2(point.y() - arcC.y(), point.x() - arcC.x());
-        if ((interpolation == Geometry.Interpolation.CCW) && (ang2 < 0)) ang2 = ang2 + 2 * Math.PI;
+    public final void drawApertureArc(QPointF currentPoint, Geometry.Interpolation interpolation, QPointF offset, Aperture aperture, D01To03 d) {
+        ArcCache c;
+        //if (arcCache.containsKey(d)) {
+            //c = arcCache.get(d);
+        //} else {
+            c = new ArcCache();
+            c.center = new QPointF(currentPoint.x() + d.getI(), currentPoint.y() + d.getJ());
+            c.radius = Math.sqrt(Math.pow(currentPoint.x() - c.center.x(), 2) + Math.pow(currentPoint.y() - c.center.y(), 2));
+            c.angStart = Math.atan2(currentPoint.y() - c.center.y(), currentPoint.x() - c.center.x());
+            var ang2 = Math.atan2(d.getY() - c.center.y(), d.getX() - c.center.x());
+            if ((interpolation == Geometry.Interpolation.CCW) && (ang2 < 0)) ang2 = ang2 + 2 * Math.PI;
+            c.angSpan = ang2 - c.angStart;
+            arcCache.put(d, c);
+        //}
+
         var arcRect = new QRectF(
-                (arcC.x() - radius + center.x() + ((offset != null) ? offset.x() : 0)) / scale,
-                -(arcC.y() - radius - center.y() + ((offset != null) ? offset.y() : 0)) / scale,
-                radius * 2 / scale, -radius * 2 / scale);
+                (c.center.x() - c.radius + center.x() + ((offset != null) ? offset.x() : 0)) / scale,
+                -(c.center.y() - c.radius - center.y() + ((offset != null) ? offset.y() : 0)) / scale,
+                c.radius * 2 / scale, -c.radius * 2 / scale);
 
         var pen = new QPen(pen());
         if (aperture != null) pen.setWidth((int) (aperture.getMeasures().get(0) / scale));
         setPen(pen);
-        drawArc(arcRect, (int) (ang1 * arcQ), (int) ((ang2 - ang1) * arcQ));
+        drawArc(arcRect, (int) (c.angStart * arcQ), (int) (c.angSpan * arcQ));
         setPen(Qt.PenStyle.NoPen);
     }
 
-    public void drawApertureLine(final QPointF start, final QPointF end, final Aperture aperture) {
+    public final void drawApertureLine(final QPointF start, final QPointF end, final Aperture aperture) {
         var pen = new QPen(pen());
         if (aperture != null) pen.setWidth((int) (aperture.getMeasures().get(0) / scale));
         setPen(pen);
         drawLine(start, end);
     }
 
-    public void drawAperture(final QPointF p, final Aperture a, final HashMap<String, Macro> macros) {
+    public final void drawAperture(final QPointF p, final Aperture a, final HashMap<String, Macro> macros) {
         if (a == null) return;
 
         switch (a.getMacro()) {
@@ -257,7 +276,7 @@ public class GerberPainter extends QPainter {
         }
     }
 
-    public void drawFeature(Feature f, boolean selected) {
+    public final void drawFeature(Feature f, boolean selected) {
         if (f instanceof RoundFeature m) {
             var dia = (int) Math.round(m.getRadius() / scale);
             var c = translatedPoint(m.getCenter().getX(), m.getCenter().getY());

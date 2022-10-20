@@ -1,6 +1,9 @@
 package ru.futurelink.gerber.panelizer.gbr.cmd.d;
 
+import io.qt.core.QPointF;
+import io.qt.core.QRectF;
 import lombok.Getter;
+import ru.futurelink.gerber.panelizer.canvas.Geometry;
 import ru.futurelink.gerber.panelizer.gbr.cmd.FS;
 
 import java.math.BigDecimal;
@@ -13,11 +16,7 @@ public class D01To03 extends DAperture {
     @Getter private final Double j;
 
     public D01To03(Integer code, double x, double y) {
-        super(code);
-        this.x = x;
-        this.y = y;
-        this.i = null;
-        this.j = null;
+        this(code, x, y, null, null);
     }
 
     public D01To03(Integer code, double x, double y, Double i, Double j) {
