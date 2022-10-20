@@ -48,7 +48,6 @@ public class MouseBites extends RoundFeature {
                 var i = -(p1.getX() - p2.getX()) / 2;
                 var j = -(p1.getY() - p2.getY()) / 2;
                 g.add(new Arc(p1, p2, i, j, Geometry.Interpolation.CCW, 10, Geometry.QuadrantMode.MULTI));
-                g.add(new Line(p1, p2, 10));
                 log.log(Level.FINE, "Arc from {0} to {1}, I = {2}, J = {3}", new Object[]{ p1, p2, i, j });
             }
         }
