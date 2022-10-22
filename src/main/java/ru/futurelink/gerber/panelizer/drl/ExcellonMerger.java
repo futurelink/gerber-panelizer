@@ -3,8 +3,6 @@ package ru.futurelink.gerber.panelizer.drl;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.Merger;
-import ru.futurelink.gerber.panelizer.canvas.HoleRound;
-import ru.futurelink.gerber.panelizer.canvas.HoleRouted;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

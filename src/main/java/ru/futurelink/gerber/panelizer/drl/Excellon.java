@@ -1,7 +1,7 @@
 package ru.futurelink.gerber.panelizer.drl;
 
 import ru.futurelink.gerber.panelizer.Layer;
-import ru.futurelink.gerber.panelizer.canvas.Hole;
+import ru.futurelink.gerber.panelizer.drl.holes.Hole;
 
 import java.util.ArrayList;
 import java.util.Iterator;

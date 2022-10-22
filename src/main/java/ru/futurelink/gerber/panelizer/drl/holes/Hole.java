@@ -1,6 +1,7 @@
-package ru.futurelink.gerber.panelizer.canvas;
+package ru.futurelink.gerber.panelizer.drl.holes;
 
 import lombok.Getter;
+import ru.futurelink.gerber.panelizer.canvas.Point;
 
 abstract public class Hole extends Point {
     @Getter private final Double diameter;

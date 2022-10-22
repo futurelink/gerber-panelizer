@@ -3,7 +3,7 @@ package ru.futurelink.gerber.panelizer.canvas.fetaures;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.canvas.Geometry;
-import ru.futurelink.gerber.panelizer.canvas.Hole;
+import ru.futurelink.gerber.panelizer.drl.holes.Hole;
 import ru.futurelink.gerber.panelizer.canvas.Point;
 import ru.futurelink.gerber.panelizer.canvas.Range;
 

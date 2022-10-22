@@ -1,9 +1,8 @@
 package ru.futurelink.gerber.panelizer.drl;
 
-import ru.futurelink.gerber.panelizer.canvas.HoleRound;
-import ru.futurelink.gerber.panelizer.canvas.HoleRouted;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRound;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRouted;
 import ru.futurelink.gerber.panelizer.canvas.Point;
-import ru.futurelink.gerber.panelizer.gbr.GerberReader;
 
 import java.io.*;
 import java.util.HashMap;
@@ -35,8 +34,6 @@ public class ExcellonReader {
     }
 
     public Excellon read(String name) throws IOException {
-        var drillDown = false;
-        var routeMode = false;
         var excellon = new Excellon(name);
         var reader = new BufferedReader(new InputStreamReader(new BufferedInputStream((stream))));
         var currentTool = 0;
@@ -59,17 +56,15 @@ public class ExcellonReader {
                 }
             } else if (state == State.BODY) {
                 switch (line) {
-                    case "G05" -> routeMode = false;
-                    case "M15" -> {
-                        drillDown = true;
+                    case "G05" -> // Turn off routing mode
+                            currentRoutedHole = null;
+                    case "M15" -> { // Drill down: creates a routed hole
                         currentRoutedHole = new HoleRouted(currentPoint, toolTable.get(currentTool));
                         excellon.addHole(currentRoutedHole);
                         log.log(Level.FINE, "Found {0}", new Object[]{currentRoutedHole});
                     }
-                    case "M16" -> {
-                        drillDown = false;
+                    case "M16" -> // Drill up: ends up a routed hole
                         currentRoutedHole = null;
-                    }
                     default -> {
                         var holeMatcher = holeRegex.matcher(line);
                         if (holeMatcher.matches()) {
@@ -86,10 +81,11 @@ public class ExcellonReader {
                                 }
                             }
 
+                            // Should have both X and Y coordinates
                             if ((x != null) && (y != null)) {
                                 currentPoint = new Point(x, y);
                                 if (code == null) {
-                                    if (!routeMode) {
+                                    if (currentRoutedHole == null) {
                                         excellon.addHole(new HoleRound(currentPoint, toolTable.get(currentTool)));
                                         log.log(Level.FINE, "Found hole at {0} diameter {1}",
                                                 new Object[]{currentPoint, toolTable.get(currentTool)});
@@ -97,8 +93,7 @@ public class ExcellonReader {
                                         log.log(Level.WARNING, "Drill cannot be used in routing mode");
                                     }
                                 } else {
-                                    routeMode = true;
-                                    if (drillDown) { // Add point to current routed hole
+                                    if (currentRoutedHole != null) { // Add point to current routed hole
                                         currentRoutedHole.addPoint(currentPoint.getX(), currentPoint.getY());
                                         log.log(Level.FINE, "Add point to {0}", new Object[]{currentRoutedHole});
                                     }

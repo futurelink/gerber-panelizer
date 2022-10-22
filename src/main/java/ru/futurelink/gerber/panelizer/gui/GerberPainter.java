@@ -7,6 +7,8 @@ import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.batch.BatchMerger;
 import ru.futurelink.gerber.panelizer.canvas.*;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRound;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRouted;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.Feature;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.RoundFeature;
 import ru.futurelink.gerber.panelizer.drl.Excellon;

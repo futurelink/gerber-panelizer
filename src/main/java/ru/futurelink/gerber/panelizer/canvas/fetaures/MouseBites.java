@@ -2,6 +2,8 @@ package ru.futurelink.gerber.panelizer.canvas.fetaures;
 
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.canvas.*;
+import ru.futurelink.gerber.panelizer.drl.holes.Hole;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRound;
 
 import java.util.*;
 import java.util.logging.Level;

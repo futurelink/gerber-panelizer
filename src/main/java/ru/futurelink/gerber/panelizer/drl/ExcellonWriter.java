@@ -1,13 +1,12 @@
 package ru.futurelink.gerber.panelizer.drl;
 
-import ru.futurelink.gerber.panelizer.canvas.HoleRound;
-import ru.futurelink.gerber.panelizer.canvas.HoleRouted;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRound;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRouted;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;

@@ -3,6 +3,8 @@ package ru.futurelink.gerber.panelizer.gbr;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.canvas.*;
+import ru.futurelink.gerber.panelizer.drl.holes.Hole;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRound;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.Feature;
 import ru.futurelink.gerber.panelizer.drl.Excellon;
 import ru.futurelink.gerber.panelizer.exceptions.MergerException;
@@ -103,7 +105,7 @@ public class GerberCanvas {
     }
 
     public final void move(Point p) {
-        this.currentCoordinate = p;
+        currentCoordinate = p;
     }
 
     public final void drawLine(Point p) {
