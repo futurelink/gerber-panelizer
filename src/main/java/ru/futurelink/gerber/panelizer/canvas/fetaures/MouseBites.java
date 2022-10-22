@@ -62,13 +62,13 @@ public class MouseBites extends RoundFeature {
             for (Geometry l1 : intersections.keySet()) {
                 var i = intersections.get(l1);
                 var c = i.length() / 2;
-                h.add(new Hole(i.pointAtDistance(c), drillDiameter));
+                h.add(new HoleRound(i.pointAtDistance(c), drillDiameter));
 
                 // Add other holes up to the edge
                 var co = drillDistance;
                 while ((c - co) > drillDistance) {
-                    h.add(new Hole(i.pointAtDistance(c + co), drillDiameter));
-                    h.add(new Hole(i.pointAtDistance(c - co), drillDiameter));
+                    h.add(new HoleRound(i.pointAtDistance(c + co), drillDiameter));
+                    h.add(new HoleRound(i.pointAtDistance(c - co), drillDiameter));
                     co += drillDistance;
                 }
             }

@@ -6,9 +6,7 @@ import io.qt.widgets.QWidget;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.batch.BatchMerger;
-import ru.futurelink.gerber.panelizer.canvas.Aperture;
-import ru.futurelink.gerber.panelizer.canvas.Geometry;
-import ru.futurelink.gerber.panelizer.canvas.Macro;
+import ru.futurelink.gerber.panelizer.canvas.*;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.Feature;
 import ru.futurelink.gerber.panelizer.canvas.fetaures.RoundFeature;
 import ru.futurelink.gerber.panelizer.drl.Excellon;
@@ -65,17 +63,26 @@ public class GerberPainter extends QPainter {
             var hi = e.holes();
             while (hi.hasNext()) {
                 var h = hi.next();
-                var c = translatedPoint(
-                        h.getCenter().getX(),
-                        h.getCenter().getY(),
-                        offset
-                );
-                var dia = h.getDiameter() / scale / 2;
-
-                setPen(Qt.PenStyle.NoPen);
-                setBrush(new QBrush(colorSettings.getDrillPen().color()));
-                drawEllipse(c, dia, dia);
-                setBrush(Qt.BrushStyle.NoBrush);
+                var c = translatedPoint(h.getX(), h.getY(), offset);
+                var radius = h.getDiameter() / scale / 2;
+                if (h instanceof HoleRouted r) {
+                    var pen = colorSettings.getDrillPen().clone();
+                    pen.setWidth((int)(radius * 2));
+                    setPen(pen);
+                    var iter = r.points();
+                    while (iter.hasNext()) {
+                        var p = iter.next();
+                        var end = translatedPoint(p.getX(), p.getY(), offset);
+                        drawLine(c, end);
+                        c = end;
+                    }
+                    setPen(Qt.PenStyle.NoPen);
+                } else if (h instanceof HoleRound) {
+                    setPen(Qt.PenStyle.NoPen);
+                    setBrush(new QBrush(colorSettings.getDrillPen().color()));
+                    drawEllipse(c, radius, radius);
+                    setBrush(Qt.BrushStyle.NoBrush);
+                }
             }
         }
     }

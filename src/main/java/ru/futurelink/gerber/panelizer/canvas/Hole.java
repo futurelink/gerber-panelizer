@@ -2,12 +2,17 @@ package ru.futurelink.gerber.panelizer.canvas;
 
 import lombok.Getter;
 
-public class Hole {
-    @Getter private final Point center;
+abstract public class Hole extends Point {
     @Getter private final Double diameter;
 
     public Hole(Point center, Double diameter) {
-        this.center = center;
+        this(center.getX(), center.getY(), diameter);
+    }
+
+    public Hole(double x, double y, Double diameter) {
+        super(x, y);
         this.diameter = diameter;
     }
+
+    abstract public Hole offset(double xOffset, double yOffset);
 }

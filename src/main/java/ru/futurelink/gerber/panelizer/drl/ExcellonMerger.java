@@ -3,6 +3,8 @@ package ru.futurelink.gerber.panelizer.drl;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.Merger;
+import ru.futurelink.gerber.panelizer.canvas.HoleRound;
+import ru.futurelink.gerber.panelizer.canvas.HoleRouted;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,8 +24,7 @@ public class ExcellonMerger extends Merger {
             log.log(Level.INFO, "Adding Excellon file {0}", new Object[]{source.getName()});
             var holes = e.holes();
             while (holes.hasNext()) {
-                var h = holes.next();
-                layer.addHole(h.getCenter().offset(xOffset, yOffset), h.getDiameter());
+                layer.addHole(holes.next().offset(xOffset, yOffset));
             }
         }
     }

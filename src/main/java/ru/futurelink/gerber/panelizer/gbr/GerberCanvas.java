@@ -50,7 +50,7 @@ public class GerberCanvas {
         var iter = e.holes();
         while (iter.hasNext()) {
             var h = iter.next();
-            holes.add(new Hole(h.getCenter(), h.getDiameter()));
+            holes.add(h);
         }
     }
 
@@ -87,11 +87,7 @@ public class GerberCanvas {
                             if (currentInterpolation == Geometry.Interpolation.LINEAR)
                                 drawLine(new Point(d2.getX(), d2.getY()));
                             else
-                                drawArc(new Point(
-                                        d2.getX(), d2.getY()),
-                                        d2.getI().doubleValue(), d2.getJ().doubleValue(),
-                                        currentQuadrantMode
-                                );
+                                drawArc(new Point(d2.getX(), d2.getY()), d2.getI(), d2.getJ(), currentQuadrantMode);
                         }
                     }
                 } else {
@@ -161,10 +157,9 @@ public class GerberCanvas {
                 var i = f.buildHoles();
                 while (i.hasNext()) {
                     var g = i.next();
-                    var c = new Point(g.getCenter().getX(), g.getCenter().getY());
                     log.log(Level.FINE, "Adding feature hole at {0} diameter {1}",
-                            new Object[] { c, g.getDiameter() });
-                    e.addHole(c, g.getDiameter());
+                            new Object[] { g, g.getDiameter() });
+                    e.addHole(new HoleRound(g.getX(), g.getY(), g.getDiameter()));
                 }
             }
         }
@@ -196,7 +191,7 @@ public class GerberCanvas {
                     for (var f : features) {
                         l.addPierces(f.getPierces().get(l));
                     }
-                } else if (g instanceof Arc a) {
+                } else if (g instanceof Arc) {
                     throw new MergerException("Arcs modified by features are not supported yet");
                 }
             }
