@@ -2,6 +2,8 @@ package ru.futurelink.gerber.panelizer.canvas.fetaures;
 
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.canvas.*;
+import ru.futurelink.gerber.panelizer.drl.holes.Hole;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRound;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -9,15 +11,17 @@ import java.util.logging.Logger;
 
 public class MouseBites extends RoundFeature {
 
+    record PointGeometry(Point point, Geometry geometry) {}
+
     private final static double drillDistance = 1.5;
     private final static double drillDiameter = 0.6;
     private final static Logger log = Logger.getLogger("MouseBites");
-    private final HashMap<Geometry, Range> intersections;
+    private final HashMap<Geometry, Range> intersections = new HashMap<>();
+    private final ArrayList<PointGeometry> points = new ArrayList<>();
     private final Layer.Type[] affectedLayerTypes = { Layer.Type.EdgeCuts, Layer.Type.TopDrill };
 
     public MouseBites(UUID id, Point center, double radius) {
         super(id, center, radius);
-        this.intersections = new HashMap<>();
     }
 
     @Override
@@ -25,7 +29,7 @@ public class MouseBites extends RoundFeature {
         // Mouse bites feature must have at least 2 intersections, which means
         // that mouse bites connect at least two panels. Each intersection must have
         // both points.
-        if (intersections.size() < 2) return false;
+        if (intersections.size() != 2) return false;
         for (var i : intersections.values()) {
             if ((i.getStart() == null) || (i.getEnd() == null)) return false;
         }
@@ -37,28 +41,16 @@ public class MouseBites extends RoundFeature {
         log.log(Level.FINE, "Building feature geometry...");
         var g = new ArrayList<Geometry>();
         if (isValid()) {
-            for (Geometry l1 : intersections.keySet()) {
-                var i1 = intersections.get(l1);
-                var iter2 = intersections.keySet().iterator();
-                Point closest = null;
-                while (iter2.hasNext()) {
-                    var i2 = intersections.get(iter2.next());
-                    if (!i1.equals(i2)) {
-                        if (closest == null) {
-                            closest = i1.getStart().closestOf(i2.getStart(), i2.getEnd());
-                        } else {
-                            closest = i1.getStart().closestOf(closest, i1.getStart().closestOf(i2.getStart(), i2.getEnd()));
-                        }
-                    }
-                }
-                if (closest == null) continue;
-
-                var i = (i1.getStart().getX() - closest.getX()) / 2;
-                var j = (i1.getStart().getY() - closest.getY()) / 2;
-                log.log(Level.FINE, "Arc from {0} to {1}, I = {2}, J = {3}",
-                        new Object[] { i1.getStart(), closest, i, j }
-                );
-                g.add(new Arc(closest, i1.getStart(), i, j, Geometry.Interpolation.CCW, l1.getAperture(), Geometry.QuadrantMode.MULTI));
+            // As points are sorted counter-clockwise, then
+            // if next point is on the same line - then start with next point
+            int start = (points.get(0).geometry == points.get(1).geometry) ? 1 : 0;
+            for (var n = start; n < points.size(); n += 2) {
+                var p1 = points.get(n).point;
+                var p2 = points.get(((n+1) >= points.size()) ? 0 : n+1).point;
+                var i = -(p1.getX() - p2.getX()) / 2;
+                var j = -(p1.getY() - p2.getY()) / 2;
+                g.add(new Arc(p1, p2, i, j, Geometry.Interpolation.CCW, 10, Geometry.QuadrantMode.MULTI));
+                log.log(Level.FINE, "Arc from {0} to {1}, I = {2}, J = {3}", new Object[]{ p1, p2, i, j });
             }
         }
         return g.iterator();
@@ -72,13 +64,13 @@ public class MouseBites extends RoundFeature {
             for (Geometry l1 : intersections.keySet()) {
                 var i = intersections.get(l1);
                 var c = i.length() / 2;
-                h.add(new Hole(i.pointAtDistance(c), drillDiameter));
+                h.add(new HoleRound(i.pointAtDistance(c), drillDiameter));
 
                 // Add other holes up to the edge
                 var co = drillDistance;
                 while ((c - co) > drillDistance) {
-                    h.add(new Hole(i.pointAtDistance(c + co), drillDiameter));
-                    h.add(new Hole(i.pointAtDistance(c - co), drillDiameter));
+                    h.add(new HoleRound(i.pointAtDistance(c + co), drillDiameter));
+                    h.add(new HoleRound(i.pointAtDistance(c - co), drillDiameter));
                     co += drillDistance;
                 }
             }
@@ -89,6 +81,7 @@ public class MouseBites extends RoundFeature {
     @Override
     public final void clean() {
         intersections.clear();
+        points.clear();
     }
 
     @Override
@@ -98,7 +91,10 @@ public class MouseBites extends RoundFeature {
 
     @Override
     public final void cleanAffectedGeometry(Layer.Type type) {
-        if (type == Layer.Type.EdgeCuts) intersections.clear();
+        if (type == Layer.Type.EdgeCuts) {
+            intersections.clear();
+            points.clear();
+        }
     }
 
     @Override
@@ -114,9 +110,20 @@ public class MouseBites extends RoundFeature {
                         addAffectedGeometry(new Line(l.getStart(), p1, l.getAperture()));
                         addAffectedGeometry(new Line(p2, l.getEnd(), l.getAperture()));
                         addPiercing(l, intersection);
+
+                        // Add both points to common array
+                        points.add(new PointGeometry(intersection.getStart(), g));
+                        points.add(new PointGeometry(intersection.getEnd(), g));
                     }
                 }
             }
+
+            // Sort points counter-clockwise
+            points.sort((a, b) -> {
+                var aAng = Math.atan2(a.point.getY() - getCenter().getY(), a.point.getX() - getCenter().getX());
+                var bAng = Math.atan2(b.point().getY() - getCenter().getY(), b.point.getX() - getCenter().getX());
+                return Double.compare(bAng, aAng);
+            });
         }
     }
 

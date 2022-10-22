@@ -1,8 +1,7 @@
 package ru.futurelink.gerber.panelizer.drl;
 
 import ru.futurelink.gerber.panelizer.Layer;
-import ru.futurelink.gerber.panelizer.canvas.Hole;
-import ru.futurelink.gerber.panelizer.canvas.Point;
+import ru.futurelink.gerber.panelizer.drl.holes.Hole;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -19,16 +18,16 @@ public class Excellon extends Layer {
         this.holes = new ArrayList<>();
     }
 
-    public final void addHole(Point center, double diameter) {
-        holes.add(new Hole(center, diameter));
+    public final void addHole(Hole h) {
+        holes.add(h);
     }
 
-    public final Iterator<Hole> holes() {
+    public final Iterator<? extends Hole> holes() {
         return holes.iterator();
     }
 
-    public final List<Hole> holesOfDiameter(double diameter) {
-        return holes.stream().filter(a -> (a.getDiameter() == diameter)).toList();
+    public final List<? extends Hole> holesOfDiameter(double diameter) {
+        return holes.stream().filter(a -> (a.getDiameter().equals(diameter))).toList();
     }
 
     @Override

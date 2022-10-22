@@ -1,10 +1,12 @@
 package ru.futurelink.gerber.panelizer.drl;
 
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRound;
+import ru.futurelink.gerber.panelizer.drl.holes.HoleRouted;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,12 +52,24 @@ public class ExcellonWriter {
         for (var i = 0; i < toolTable.size(); i++) {
             writer.write("T" + (i + 1) + "\n");
             var holes = drl.holesOfDiameter(toolTable.get(i));
+            log.log(Level.FINE, "Writing {0} holes of diameter {1}", new Object[] { holes.size(), toolTable.get(i) });
             for (var h : holes) {
-                writer.write(new Formatter(Locale.US).format("X%.3fY%.3f\n", h.getCenter().getX(), h.getCenter().getY()).toString());
+                if (h instanceof HoleRound) {
+                    writer.write(new Formatter(Locale.US).format("X%.3fY%.3f\n", h.getX(), h.getY()).toString());
+                } else if (h instanceof HoleRouted rh) {
+                    writer.write(new Formatter(Locale.US).format("G00X%.3fY%.3f\n", h.getX(), h.getY()).toString());
+                    writer.write("M15\n"); // Drill down
+                    var pIter = rh.points();
+                    while (pIter.hasNext()) {
+                        var p = pIter.next();
+                        writer.write(new Formatter(Locale.US).format("G01X%.3fY%.3f\n", p.getX(), p.getY()).toString());
+                    }
+                    writer.write("M16\nG05\n"); // Drill up and turn off route mode
+                }
             }
         }
 
-        // Wrote footer
+        // Write footer
         writer.write("T0\nM30\n");
 
         writer.flush();

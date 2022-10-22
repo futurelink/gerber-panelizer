@@ -22,8 +22,7 @@ public class ExcellonMerger extends Merger {
             log.log(Level.INFO, "Adding Excellon file {0}", new Object[]{source.getName()});
             var holes = e.holes();
             while (holes.hasNext()) {
-                var h = holes.next();
-                layer.addHole(h.getCenter().offset(xOffset, yOffset), h.getDiameter());
+                layer.addHole(holes.next().offset(xOffset, yOffset));
             }
         }
     }
