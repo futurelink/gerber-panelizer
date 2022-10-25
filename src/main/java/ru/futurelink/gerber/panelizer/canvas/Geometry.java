@@ -13,4 +13,13 @@ public abstract class Geometry extends Range {
         this.aperture = aperture;
         this.interpolation = interpolation;
     }
+
+    public static Interpolation interpolationByCode(int code) {
+        return switch (code) {
+            case 1 -> Geometry.Interpolation.LINEAR;
+            case 2 -> Geometry.Interpolation.CW;
+            case 3 -> Geometry.Interpolation.CCW;
+            default -> null;
+        };
+    }
 }

@@ -25,11 +25,22 @@ dependencies {
     implementation "org.projectlombok:lombok:1.18.24"
     annotationProcessor "org.projectlombok:lombok:1.18.24"
 
+    implementation "io.github.earcut4j:earcut4j:2.2.2"
+
     testImplementation "org.junit.jupiter:junit-jupiter-api:5.9.0"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.9.0"
 
     implementation "io.qtjambi:qtjambi:6.3.2"
     implementation 'io.qtjambi:qtjambi-native-windows-x64:6.3.2'
+
+    implementation 'io.qtjambi:qtjambi-qt3dcore:6.3.2'
+    implementation 'io.qtjambi:qtjambi-qt3dcore-native-windows-x64:6.3.2'
+
+    implementation 'io.qtjambi:qtjambi-qt3drender:6.3.2'
+    implementation 'io.qtjambi:qtjambi-qt3drender-native-windows-x64:6.3.2'
+
+    implementation 'io.qtjambi:qtjambi-opengl:6.3.2'
+    implementation 'io.qtjambi:qtjambi-opengl-native-windows-x64:6.3.2'
 
     implementation 'io.qtjambi:qtjambi-openglwidgets:6.3.2'
     implementation 'io.qtjambi:qtjambi-openglwidgets-native-windows-x64:6.3.2'
@@ -39,7 +50,7 @@ dependencies {
 }
 
 test {
-    systemProperty ("java.library.path", JVMArgs)
+    systemProperty ("java.library.path", QTPath)
     useJUnitPlatform()
 }
 

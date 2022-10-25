@@ -16,6 +16,7 @@ import ru.futurelink.gerber.panelizer.canvas.fetaures.RoundFeature;
 import ru.futurelink.gerber.panelizer.exceptions.GerberException;
 import ru.futurelink.gerber.panelizer.exceptions.MergerException;
 import ru.futurelink.gerber.panelizer.gui.MergerProject;
+import ru.futurelink.gerber.panelizer.gui.widgets.intf.MergerWidget;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,13 +27,13 @@ public class ProjectManagerWidget extends QDockWidget {
     private final QTreeWidget projectTree;
     @Getter private MergerProject project;
     @Getter
-    MergerPanelWidget workArea;
+    MergerWidget workArea;
     @Getter private boolean modified;
     @Getter private String filename;
 
     public final Signal1<String> projectNameChanged = new Signal1<>();
 
-    public ProjectManagerWidget(QWidget parent, MergerPanelWidget workArea) {
+    public ProjectManagerWidget(QWidget parent, MergerWidget workArea) {
         super(parent);
         setFeatures(DockWidgetFeature.NoDockWidgetFeatures);
         setWindowTitle("Project structure");
