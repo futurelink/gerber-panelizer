@@ -32,6 +32,12 @@ public class GerberGraphics {
         lines = new ArrayList<>();
     }
 
+    public void clean() {
+        polygons.clear();
+        triangles.clear();
+        lines.clear();
+    }
+
     public final void processExcellon(Layer layer, int precision) {
         if (layer instanceof Excellon e) {
             var hi = e.holes();

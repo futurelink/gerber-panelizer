@@ -2,9 +2,7 @@ package ru.futurelink.gerber.panelizer.gui.widgets.merger;
 
 import io.qt.core.*;
 import io.qt.gui.*;
-import io.qt.widgets.QMenu;
-import io.qt.widgets.QVBoxLayout;
-import io.qt.widgets.QWidget;
+import io.qt.widgets.*;
 import lombok.Getter;
 import ru.futurelink.gerber.panelizer.Layer;
 import ru.futurelink.gerber.panelizer.batch.Batch;
@@ -23,6 +21,7 @@ public class MergerPanelWidget extends QWidget implements MergerWidget {
     private final GerberData gerberData;
     @Getter private double margin;
     private QPointF mousePosition;
+    private QPoint mousePositionPx;
     private QPoint mousePressPoint;
     public final Signal1<QPointF> mouseMoved = new Signal1<>();
     public final Signal1<Object> deleteItem = new Signal1<>();
@@ -47,6 +46,8 @@ public class MergerPanelWidget extends QWidget implements MergerWidget {
                 Layer.Type.FrontSilk,
                 Layer.Type.TopDrill
         ));
+
+        renderWidget.onErrorSignal().connect(e -> QMessageBox.critical(this, "Render error!", e));
 
         var lay = new QVBoxLayout(this);
         lay.setContentsMargins(4, 4, 4, 4);
@@ -146,6 +147,7 @@ public class MergerPanelWidget extends QWidget implements MergerWidget {
     protected void mouseMoveEvent(QMouseEvent event) {
         boolean needRepaint = false;
         var position = event.pos();
+        mousePositionPx = event.pos();
         mousePosition = renderWidget.getScreenCoords(event.pos());
         var instance = renderWidget.getHighlightedInstance();
         if (mousePressPoint != null) {
@@ -178,6 +180,22 @@ public class MergerPanelWidget extends QWidget implements MergerWidget {
 
         if (needRepaint) repaint();
 
+        event.accept();
+    }
+
+    @Override
+    protected void wheelEvent(QWheelEvent event) {
+        var numDegrees = event.angleDelta();
+        if (!numDegrees.isNull()) {
+            // Change scale
+            if (numDegrees.y() < 0) {
+                renderWidget.scaleUp(1.1);
+            } else {
+                renderWidget.scaleDown(1.1);
+            }
+            // When we scale - position of mouse also changes
+            mouseMoved.emit(renderWidget.getScreenCoords(mousePositionPx));
+        }
         event.accept();
     }
 
@@ -232,22 +250,6 @@ public class MergerPanelWidget extends QWidget implements MergerWidget {
                     yIntersection.x2() - yIntersection.x1());
         }
         return null;
-    }
-
-
-    @Override
-    protected void wheelEvent(QWheelEvent event) {
-        var numDegrees = event.angleDelta();
-        if (!numDegrees.isNull()) {
-            // Change scale
-            if (numDegrees.y() < 0) {
-                renderWidget.scaleUp(1.1);
-            } else {
-                renderWidget.scaleDown(1.1);
-            }
-        }
-        repaint();
-        event.accept();
     }
 
     public void addBatch(UUID id, Batch b) {

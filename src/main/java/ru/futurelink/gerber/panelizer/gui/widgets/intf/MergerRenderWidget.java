@@ -1,5 +1,6 @@
 package ru.futurelink.gerber.panelizer.gui.widgets.intf;
 
+import io.qt.core.QObject;
 import io.qt.core.QPoint;
 import io.qt.core.QPointF;
 import ru.futurelink.gerber.panelizer.Layer;
@@ -20,4 +21,5 @@ public interface MergerRenderWidget {
     void postMergeDisplayLayers();
     void clear();
     QPointF getScreenCoords(QPoint screenPos);
+    QObject.Signal1<String> onErrorSignal();
 }

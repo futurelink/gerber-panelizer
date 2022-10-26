@@ -24,6 +24,7 @@ public class MergerPaintedWidget extends QWidget implements MergerRenderWidget {
     private QPointF center;
     private final ColorSettings colorSettings = ColorSettings.getInstance();
     private Object instanceUnderMouse = null;
+    private final Signal1<String> onError = new Signal1<>();
 
     @Getter private final List<Layer.Type> layerOrder = new ArrayList<>();
 
@@ -179,7 +180,14 @@ public class MergerPaintedWidget extends QWidget implements MergerRenderWidget {
 
     @Override
     public QPointF getScreenCoords(QPoint screenPos) {
-        return new QPointF(-(getCenter().x() - screenPos.x() * getScale()), getCenter().y() - screenPos.y() * getScale());
+        return new QPointF(
+                -(getCenter().x() - screenPos.x() * getScale()),
+                getCenter().y() - screenPos.y() * getScale());
+    }
+
+    @Override
+    public Signal1<String> onErrorSignal() {
+        return onError;
     }
 
     private boolean isInBetween(double value, double a, double b) {

@@ -23,35 +23,44 @@ import java.util.*;
 
 public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWidget, OpenGLConst {
     private final GerberData gerberData;
-    private float scale = 3.0f;
     private final QMatrix4x4 projection = new QMatrix4x4();
-    private QVector2D offset = new QVector2D();
+    private QVector2D viewOffset = new QVector2D();
+    private QPointF centerOffset = new QPointF(0, 0);
+    private float scale = 0.3f;
     private QOpenGLShaderProgram shaderProgram = null;
     private QOpenGLFunctions_3_3_Core GL = null;
     private final HashMap<Layer.Type, LayerBuffer> layerBuffers = new HashMap<>();
     @Getter private final List<Layer.Type> layerOrder = new ArrayList<>();
     private final HashMap<Layer.Type, QVector4D> layerColors = new HashMap<>();
 
-    private static class PolygonMapItem {
-        int start;
-        int length;
-
-        private PolygonMapItem(int start, int length) {
-            this.start = start;
-            this.length = length;
-        }
-    }
+    public final Signal1<String> onError = new Signal1<>();
 
     private class LayerBuffer {
+        private static final int TRIANGLE_BUFFER_INDEX = 0;
+        private static final int POLYGON_BUFFER_INDEX = 1;
+        private static final int LINES_BUFFER_INDEX = 2;
+        boolean initialized = false;
         @Getter private final QVector4D color;
         private final IntBuffer buffers;
         private final IntBuffer VAOs;
         @Getter private final ArrayList<PolygonMapItem> polygonMap;
+        private final IntBuffer bufferDataLengths;
+
+        private static class PolygonMapItem {
+            int start;
+            int length;
+
+            private PolygonMapItem(int start, int length) {
+                this.start = start;
+                this.length = length;
+            }
+        }
 
         public LayerBuffer(QVector4D layerColor) {
             polygonMap = new ArrayList<>();
             buffers = IntBuffer.allocate(3);
             VAOs = IntBuffer.allocate(3);
+            bufferDataLengths = IntBuffer.allocate(3);
             color = layerColor;
         }
 
@@ -65,72 +74,60 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
             updatePolygonBuffer(null);
 
             // Initialize VAOs
-            updateVAO(buffers.get(0), VAOs.get(0));
-            updateVAO(buffers.get(1), VAOs.get(1));
-            updateLinesVAO(buffers.get(2));
+            createVAO(buffers.get(TRIANGLE_BUFFER_INDEX), VAOs.get(TRIANGLE_BUFFER_INDEX));
+            createVAO(buffers.get(POLYGON_BUFFER_INDEX), VAOs.get(POLYGON_BUFFER_INDEX));
+            createVAO(buffers.get(LINES_BUFFER_INDEX), VAOs.get(LINES_BUFFER_INDEX));
+
+            initialized = true;
         }
 
-        public int getTriangleVAO() { return VAOs.get(0); }
-        public int getPolygonVAO() { return VAOs.get(1); }
-        public int getLinesVAO() { return VAOs.get(2); }
+        public int getTriangleCount() { return bufferDataLengths.get(TRIANGLE_BUFFER_INDEX); }
+        public int getLinesCount() { return bufferDataLengths.get(LINES_BUFFER_INDEX); }
 
-        public int getTriangleBuffer() { return buffers.get(0); }
-        public int getPolygonBuffer() { return buffers.get(1); }
-        public int getLinesBuffer() { return buffers.get(2); }
+        public int getTriangleVAO() { return VAOs.get(TRIANGLE_BUFFER_INDEX); }
+        public int getPolygonVAO() { return VAOs.get(POLYGON_BUFFER_INDEX); }
+        public int getLinesVAO() { return VAOs.get(LINES_BUFFER_INDEX); }
 
         public void updatePolygonBuffer(DoubleBuffer dataBuffer) throws Exception {
-            updateBuffer(getPolygonBuffer(), dataBuffer);
+            updateBuffer(POLYGON_BUFFER_INDEX, dataBuffer);
         }
 
         public void updateLinesBuffer(DoubleBuffer dataBuffer) throws Exception {
-            updateBuffer(getLinesBuffer(), dataBuffer);
+            updateBuffer(LINES_BUFFER_INDEX, dataBuffer);
         }
 
         public void updateTriangleBuffer(DoubleBuffer dataBuffer) throws Exception {
-            updateBuffer(getTriangleBuffer(), dataBuffer);
+            updateBuffer(TRIANGLE_BUFFER_INDEX, dataBuffer);
         }
 
-        private void updateBuffer(int buffer, double[] data) throws Exception {
-            updateBuffer(buffer, DoubleBuffer.wrap(data));
-        }
-
-        private void updateBuffer(int buffer, DoubleBuffer dataBuffer) throws Exception {
-            GL.glBindBuffer(GL_ARRAY_BUFFER, buffer);
-            if (GL.glGetError() != 0) { throw new Exception("Error binding buffer on update!"); }
-            if (dataBuffer != null) {
-                var dataSize = dataBuffer.capacity() * Double.BYTES;
-                GL.glBufferData(GL_ARRAY_BUFFER, dataSize, dataBuffer, GL_DYNAMIC_DRAW);
-            } else {
-                GL.glBufferData(GL_ARRAY_BUFFER, 0, null, GL_DYNAMIC_DRAW);
+        private void clean() throws Exception {
+            if (initialized) {
+                polygonMap.clear();
+                updateLinesBuffer(null);
+                updateTriangleBuffer(null);
+                updatePolygonBuffer(null);
             }
-            if (GL.glGetError() != 0) { throw new Exception("Error setting buffer data!"); }
+        }
+
+        private void updateBuffer(int bufferIndex, DoubleBuffer dataBuffer) throws Exception {
+            GL.glBindBuffer(GL_ARRAY_BUFFER, buffers.get(bufferIndex));
+            if (GL.glGetError() != 0) { throw new Exception("Error binding buffer on update!"); }
+            bufferDataLengths.put(bufferIndex, (dataBuffer != null) ? dataBuffer.capacity() : 0);
+            var length = (long) bufferDataLengths.get(bufferIndex) * Double.BYTES;
+            GL.glBufferData(GL_ARRAY_BUFFER, length, null, GL_DYNAMIC_DRAW);
+            GL.glBufferSubData(GL_ARRAY_BUFFER, 0, length, dataBuffer);
+            if (GL.glGetError() != 0) { throw new Exception("Error setting buffer data: " + GL.glGetError()); }
             GL.glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
-        private void updateVAO(int buffer, int vao) throws Exception {
+        private void createVAO(int buffer, int vao) throws Exception {
             GL.glBindBuffer(GL_ARRAY_BUFFER, buffer);
-            if (GL.glGetError() != 0) { throw new Exception("Error binding buffer!"); }
+            if (GL.glGetError() != 0) { throw new Exception("Error binding buffer: " + GL.glGetError()); }
             GL.glBindVertexArray(vao);
-            if (GL.glGetError() != 0) { throw new Exception("Error binding VAO on update!"); }
+            if (GL.glGetError() != 0) { throw new Exception("Error binding VAO on update + " + GL.glGetError()); }
 
             GL.glEnableVertexAttribArray(0);
             GL.glVertexAttribPointer(0, 2, GL_DOUBLE, false, 0, null);  // Vertex
-
-            GL.glBindVertexArray(0);
-            GL.glDisableVertexAttribArray(0);
-        }
-
-        private void updateLinesVAO(int buffer) throws Exception {
-            GL.glBindBuffer(GL_ARRAY_BUFFER, buffer);
-            if (GL.glGetError() != 0) { throw new Exception("Error binding buffer!"); }
-            GL.glBindVertexArray(getLinesVAO());
-            if (GL.glGetError() != 0) { throw new Exception("Error binding VAO on update!"); }
-
-            var stride = 5 * Double.BYTES;
-            GL.glEnableVertexAttribArray(0);
-            GL.glVertexAttribPointer(0, 2, GL_DOUBLE, false, stride, null);  // Vertex
-            GL.glVertexAttribPointer(1, 2, GL_DOUBLE, false, stride, null);  // Normal
-            GL.glVertexAttribPointer(2, 1, GL_DOUBLE, false, stride, null);  // Width
 
             GL.glBindVertexArray(0);
             GL.glDisableVertexAttribArray(0);
@@ -164,7 +161,6 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
         GL.glEnable(GL_LINE_SMOOTH);
         GL.glEnable(GL_POLYGON_SMOOTH);
         GL.glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-        //GL.glHint(GL_POLYGON_SMOOTH, GL_NICEST);
 
         GL.glEnable(GL_MULTISAMPLE);
 
@@ -180,26 +176,6 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        offset.setX(-100);
-        offset.setY(100);
-    }
-
-    @Override
-    protected void wheelEvent(QWheelEvent event) {
-        var numDegrees = event.angleDelta();
-        if (!numDegrees.isNull()) {
-            if (numDegrees.y() < 0) {
-                scale = scale * 1.1f;
-            } else {
-                scale = scale / 1.1f;
-            }
-        }
-        event.accept();
-
-        // Update scene
-        resizeGL(width(), height());
-        repaint();
     }
 
     /*
@@ -217,8 +193,8 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
                             gl_Position = (vec4(vertex, 0.0, 1.0) + vec4(offset, height, 0.0)) * projection;
                         }
                     """)) {
-            System.out.println("Could not compile vertex shader:");
-            System.out.println(vertexShader.log());
+            onError.emit("Could not compile vertex shader:" + vertexShader.log());
+            return;
         }
 
         var fragmentShader = new QOpenGLShader(new QOpenGLShader.ShaderType(QOpenGLShader.ShaderTypeBit.Fragment));
@@ -229,8 +205,8 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
                             gl_FragColor = color;
                         }
                     """)) {
-            System.out.println("Could not compile fragment shader:");
-            System.out.println(fragmentShader.log());
+            onError.emit("Could not compile fragment shader:" + fragmentShader.log());
+            return;
         }
 
         shaderProgram = new QOpenGLShaderProgram(context());
@@ -242,6 +218,8 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
     public void updateBuffers(Layer.Type type, Layer layer) throws MergerException {
         var layerBuffer = layerBuffers.get(type);
         if (layerBuffer == null) return;
+
+        System.out.println("---- Layer type: " + type + " ----");
 
         var gr = new GerberGraphics();
         if (layer instanceof Gerber gerber) {
@@ -255,7 +233,6 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
         }
 
         // Copy data fo OpenGL buffer
-        System.out.println("---- Layer type: " + type + " ----");
         System.out.println("Triangles count: " + gr.getTrianglesCount());
         try {
             var b = DoubleBuffer.allocate(gr.getTrianglesCount() * 6);
@@ -267,6 +244,7 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
 
             layerBuffer.updateTriangleBuffer(b);
         } catch (Exception e) {
+            e.printStackTrace();
             throw new MergerException(e.getMessage());
         }
 
@@ -277,7 +255,7 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
             var s = 0;
             for (var poly : gr.getPolygons()) {
                 for (var point : poly) { b.put(point.x()); b.put(point.y()); }
-                layerBuffers.get(type).getPolygonMap().add(new PolygonMapItem(s, poly.length()));
+                layerBuffers.get(type).getPolygonMap().add(new LayerBuffer.PolygonMapItem(s, poly.length()));
                 s += poly.length();
             }
 
@@ -296,10 +274,6 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
         }*/
     }
 
-    void cleanBuffers() {
-
-    }
-
     private HashMap<Integer, Aperture> getApertures(Layer.Type type) {
         return gerberData.getApertures(type);
     }
@@ -315,9 +289,10 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
         // Configure shader
         if (shaderProgram.bind()) {
             shaderProgram.setUniformValue("projection", projection);
-            shaderProgram.setUniformValue("offset", offset);
+            shaderProgram.setUniformValue("offset", viewOffset);
         } else {
-            System.out.println("Could not bind shader program");
+            onError.emit("Could not bind shader program: " + GL.glGetError());
+            return;
         }
 
         var height = 0.0f;
@@ -336,12 +311,12 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
 
             // Triangles buffer
             GL.glBindVertexArray(layerBuffers.get(layer).getTriangleVAO());
-            GL.glDrawArrays(GL_TRIANGLES, 0, 1000000);
+            GL.glDrawArrays(GL_TRIANGLES, 0, layerBuffers.get(layer).getTriangleCount());
             GL.glBindVertexArray(0);
 
             // Lines buffer
             GL.glBindVertexArray(layerBuffers.get(layer).getLinesVAO());
-            GL.glDrawArrays(GL_LINES, 0, 1000000);
+            GL.glDrawArrays(GL_LINES, 0, layerBuffers.get(layer).getLinesCount());
             GL.glBindVertexArray(0);
 
             height += 0.01; // Place next layer on the top
@@ -355,26 +330,36 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
 
     @Override
     protected void resizeGL(int w, int h) {
+        centerOffset = new QPointF(w * scale / 2, h * scale / 2);
         projection.setToIdentity();
-        projection.ortho( -w / scale, w / scale, -h / scale, h / scale, -1.0f, 1.0f );
+        projection.ortho(
+                -(float) centerOffset.x(), (float) centerOffset.x(),
+                -(float) centerOffset.y(), (float) centerOffset.y(),
+                -1.0f, 1.0f);
         GL.glViewport(0, 0, w, h);
     }
 
     @Override
     public void scaleUp(double step) {
-
+        scale = scale * (float) step;
+        moveCenter(0, 0);   // Recalculate center offset
+        resizeGL(width(), height());
+        repaint();
     }
 
     @Override
     public void scaleDown(double step) {
-
+        scale = scale / (float) step;
+        moveCenter(0, 0);   // Recalculate center offset
+        resizeGL(width(), height());
+        repaint();
     }
 
     @Override
     public void moveCenter(double xStepPx, double yStepPx) {
-        offset = new QVector2D(
-                (float)(offset.x() + xStepPx / scale * 2),
-                (float)(offset.y() - yStepPx / scale * 2)
+        viewOffset = new QVector2D(
+                (float)(viewOffset.x() + xStepPx * scale),
+                (float)(viewOffset.y() - yStepPx * scale)
         );
         repaint();
     }
@@ -386,7 +371,7 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
 
     @Override
     public QPointF getCenter() {
-        return offset.toPointF();
+        return viewOffset.toPointF();
     }
 
     @Override
@@ -423,22 +408,35 @@ public class MergerOpenGLWidget extends QOpenGLWidget implements MergerRenderWid
     public void postMergeDisplayLayers() {
         // Update graphics buffers
         for (var l : getLayerOrder()) {
-            try { updateBuffers(l, gerberData.getMerger().getMergedBatch().getLayer(l)); }
-            catch (Exception e) {
-                e.printStackTrace();
+            try {
+                updateBuffers(l, gerberData.getMerger().getMergedBatch().getLayer(l));
+            } catch (Exception e) {
+                onError.emit(e.getMessage());
             }
         }
     }
 
     @Override
     public void clear() {
-        cleanBuffers();
+        try {
+            for (var b : layerBuffers.keySet()) {
+                layerBuffers.get(b).clean();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         repaint();
     }
 
     @Override
     public QPointF getScreenCoords(QPoint screenPos) {
-        return new QPointF(getCenter().x() + screenPos.x() / getScale() * 2, getCenter().y() - screenPos.y() / getScale() * 2);
+        return new QPointF(-getCenter().x() - centerOffset.x() + screenPos.x() * scale,
+                -(getCenter().y() - centerOffset.y() + screenPos.y() * scale));
+    }
+
+    @Override
+    public Signal1<String> onErrorSignal() {
+        return onError;
     }
 
 }
